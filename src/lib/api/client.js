@@ -1,5 +1,6 @@
 import { API_URL } from '../config';
 import { getToken } from '../tokenStorage';
+import { getDevUserId } from '../devUser';
 
 // 서버 오류. status = HTTP 상태, code = 명세 오류 코드(ALREADY_MATCHED 등) 또는 DB 오류 코드
 export class ApiError extends Error {
@@ -29,12 +30,16 @@ function toQuery(params) {
  * 공통 요청 함수
  * 오류 응답은 { code, message } 형식 (명세 공통 규칙)
  */
-export async function request(path, { method = 'GET', body, query, auth = true, timeout = 15000 } = {}) {
+// asUser: [개발용] 이 요청만 해당 테스트 사용자로 보냄 (기능 시연 화면 src/app/dev.js)
+export async function request(path, { method = 'GET', body, query, auth = true, timeout = 15000, asUser } = {}) {
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (auth) {
     const token = await getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
+    // [개발용] 로그인 완성 전 테스트: 서버 DEV_AUTH=true 일 때 X-User-Id 로 사용자 구분 (배포 빌드에서는 꺼짐)
+    const devId = __DEV__ ? (asUser ? String(asUser) : getDevUserId()) : null;
+    if (devId) headers['X-User-Id'] = devId;
   }
 
   const controller = new AbortController();

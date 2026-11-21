@@ -23,6 +23,7 @@ export function tokenFromUrl(url) {
  * API-006 POST   /api/matches                    → { status, match }
  * API-007 GET    /api/matches/me                 → { status, match_id, partner, started_at }
  * API-008 POST   /api/matches/me/end             { rating }
+ * API-020 DELETE /api/matches/queue              → 204 (매칭 대기 취소)
  * API-019 GET    /api/matches/past
  * API-009 POST   /api/diaries                    { match_id, title, content }
  * API-010 GET    /api/diaries?match_id=&offset=&limit=20
@@ -60,6 +61,7 @@ export const realApi = {
   // ---- 매칭 ----
   requestMatch: () => request('/api/matches', { method: 'POST' }),
   getMyMatch: () => request('/api/matches/me'),
+  cancelWaiting: () => request('/api/matches/queue', { method: 'DELETE' }), // API-020
   endMatch: (rating = null) => request('/api/matches/me/end', { method: 'POST', body: { rating } }),
   getPastMatches: () => request('/api/matches/past'),
 
