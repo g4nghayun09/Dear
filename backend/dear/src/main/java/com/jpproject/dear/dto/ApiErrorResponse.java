@@ -3,18 +3,18 @@ package com.jpproject.dear.dto;
 import java.util.Map;
 
 public class ApiErrorResponse {
-    private final int sataus;
+    private final int status;
     private final String message;
     private final Map<String, String> errors;
 
-    public ApiErrorResponse(int sataus, String message, Map<String, String> errors) {
-        this.sataus = sataus;
+    public ApiErrorResponse(int status, String message, Map<String, String> errors) {
+        this.status = status;
         this.message = message;
         this.errors = errors;
     }
 
-    public int getSataus() {
-        return sataus;
+    public int getStatus() {
+        return status;
     }
 
     public String getMessage() {

@@ -14,10 +14,10 @@ public class WebConfig implements WebMvcConfigurer {
         this.loginInterceptor = loginInterceptor;
     }
 
-    // todo: 나중에 이쪽 수정해야함------------------------------------------------
+    // 로그인이 필요한 경로. 일기(/diaries) 등 기능을 만들 때 여기에 추가한다.
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/members/me", "/posts", "/posts/**");
+                .addPathPatterns("/users/me", "/users/me/**");
     }
 }
