@@ -1,0 +1,20 @@
+# 로컬 MySQL (Docker Desktop이 있을 때). 실행: docker compose up -d
+# 비밀번호는 demo/.env 의 DB_PASSWORD 와 같게 맞추세요.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dear-mysql
+    environment:
+      MYSQL_DATABASE: dear
+      MYSQL_USER: dear
+      MYSQL_PASSWORD: ${DB_PASSWORD:-dear1234}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-dear1234}
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - dear-mysql-data:/var/lib/mysql
+
+volumes:
+  dear-mysql-data:
