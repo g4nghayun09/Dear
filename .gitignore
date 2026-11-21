@@ -43,3 +43,15 @@ yarn-error.*
 # 환경 변수 (키 노출 방지)
 .env
 .env.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Spring / Gradle 빌드 결과
+build/
+.gradle/
+
+# Windows
+Thumbs.db

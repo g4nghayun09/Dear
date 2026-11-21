@@ -88,6 +88,12 @@ export const mockApi = {
     if (db.match) return { status: 'matched', match_id: db.match.id, partner: db.match.partner, started_at: db.match.started_at };
     return { status: 'none', match_id: null, partner: null, started_at: null };
   },
+  async cancelWaiting() {
+    await wait(250);
+    if (!db.waiting) fail(409, 'NOT_WAITING');
+    db.waiting = false;
+    return null;
+  },
   async endMatch(rating = null) {
     await wait();
     if (rating !== null && (rating < 1 || rating > 5)) fail(400, 'INVALID_INPUT');

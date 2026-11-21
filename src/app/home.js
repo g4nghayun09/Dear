@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DearLogo from '../components/DearLogo';
 import { api } from '../lib/api';
@@ -67,7 +67,8 @@ export default function HomeScreen() {
       {!!error && <Text style={styles.error}>{error}</Text>}
 
       {match && match.status !== 'matched' && (
-        <Pressable onPress={match.status === 'waiting' ? refresh : onRequest} disabled={busy} style={styles.primary}>
+        // 매칭 신청·대기는 P-005 매칭 화면(src/app/match.js)에서 처리
+        <Pressable onPress={() => router.push('/match')} disabled={busy} style={styles.primary}>
           <Text style={styles.primaryText}>{t(match.status === 'waiting' ? 'home.refresh' : 'home.requestMatch')}</Text>
         </Pressable>
       )}
