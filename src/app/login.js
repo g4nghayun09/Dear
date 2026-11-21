@@ -6,11 +6,13 @@ import GoogleButton from '../components/GoogleButton';
 import { useAuth } from '../lib/auth';
 import { errorMessage } from '../lib/errorMessage';
 import { colors } from '../lib/theme';
+import { useT } from '../lib/i18n';
 
 export default function LoginScreen() {
   const { isLoggedIn, profile, loading, signInWithGoogle } = useAuth();
   const { height } = useWindowDimensions();
   const [busy, setBusy] = useState(false);
+  const t = useT();
 
   if (!loading && isLoggedIn) return <Redirect href={profile ? '/home' : '/signup'} />;
 
@@ -20,7 +22,7 @@ export default function LoginScreen() {
       await signInWithGoogle();
       // 성공하면 로그인 상태가 바뀌면서 위의 Redirect가 가입하기/홈으로 보냄
     } catch (e) {
-      Alert.alert('로그인 실패', errorMessage(e));
+      Alert.alert(t('login.failTitle'), errorMessage(e));
     } finally {
       setBusy(false);
     }

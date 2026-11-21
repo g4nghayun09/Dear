@@ -1,20 +1,22 @@
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text } from 'react-native';
 import { colors, radius } from '../lib/theme';
+import { useT } from '../lib/i18n';
 
 export default function GoogleButton({ onPress, loading }) {
+  const t = useT();
   return (
     <Pressable
       onPress={onPress}
       disabled={loading}
       accessibilityRole="button"
-      accessibilityLabel="구글 계정으로 로그인"
+      accessibilityLabel={t('login.googleA11y')}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
       <Image source={require('../../assets/images/google-g.png')} style={styles.icon} />
       {loading ? (
         <ActivityIndicator color={colors.primary} style={styles.label} />
       ) : (
-        <Text style={styles.label}>Sign in with Google</Text>
+        <Text style={styles.label}>{t('login.googleButton')}</Text>
       )}
     </Pressable>
   );

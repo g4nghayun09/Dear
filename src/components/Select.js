@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CaretDown } from './Icons';
 import { colors, radius } from '../lib/theme';
+import { useT } from '../lib/i18n';
 
 // 시안의 '국가 및 언어 설정' 드롭다운. 펼치면 아래에 목록이 겹쳐서 나타남.
-export default function Select({ value, options, onChange, placeholder = '선택하기' }) {
+export default function Select({ value, options, onChange, placeholder }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
+  const placeholderText = placeholder ?? t('common.select');
   const selected = options.find((o) => o.value === value);
 
   return (
@@ -16,7 +19,7 @@ export default function Select({ value, options, onChange, placeholder = '선택
         accessibilityState={{ expanded: open }}
         style={[styles.field, open && styles.fieldOpen]}
       >
-        <Text style={[styles.text, !selected && styles.placeholder]}>{selected ? selected.label : placeholder}</Text>
+        <Text style={[styles.text, !selected && styles.placeholder]}>{selected ? selected.label : placeholderText}</Text>
         <CaretDown up={open} />
       </Pressable>
 

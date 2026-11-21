@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { api } from './api';
 import { setUnauthorizedHandler } from './api/client';
 import { clearToken, getToken, setToken } from './tokenStorage';
+import { setLanguage } from './i18n';
 
 WebBrowser.maybeCompleteAuthSession(); // 웹에서 로그인 팝업을 닫아 줌
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
   const loadProfile = useCallback(async () => {
     const me = await api.getMyProfile();
     setProfile(me);
+    if (me?.native_lang) setLanguage(me.native_lang); // 프로필의 모국어 = 앱 UI 언어
     return me;
   }, []);
 
@@ -86,6 +88,7 @@ export function AuthProvider({ children }) {
   const signup = useCallback(async ({ nickname, native_lang }) => {
     const me = await api.createProfile({ nickname, native_lang });
     setProfile(me);
+    if (me?.native_lang) setLanguage(me.native_lang);
     return me;
   }, []);
 
