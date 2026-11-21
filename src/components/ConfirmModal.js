@@ -1,7 +1,11 @@
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from '../lib/theme';
+import { useT } from '../lib/i18n';
 
-export default function ConfirmModal({ visible, title, message, confirmText = '확인', cancelText = '취소', onConfirm, onCancel, loading }) {
+export default function ConfirmModal({ visible, title, message, confirmText, cancelText, onConfirm, onCancel, loading }) {
+  const t = useT();
+  const confirm = confirmText ?? t('common.confirm');
+  const cancel = cancelText ?? t('common.cancel');
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
@@ -10,10 +14,10 @@ export default function ConfirmModal({ visible, title, message, confirmText = '�
           {!!message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.row}>
             <Pressable onPress={onCancel} disabled={loading} style={[styles.btn, styles.cancel]}>
-              <Text style={styles.cancelText}>{cancelText}</Text>
+              <Text style={styles.cancelText}>{cancel}</Text>
             </Pressable>
             <Pressable onPress={onConfirm} disabled={loading} style={[styles.btn, styles.ok]}>
-              {loading ? <ActivityIndicator color={colors.primaryText} /> : <Text style={styles.okText}>{confirmText}</Text>}
+              {loading ? <ActivityIndicator color={colors.primaryText} /> : <Text style={styles.okText}>{confirm}</Text>}
             </Pressable>
           </View>
         </View>

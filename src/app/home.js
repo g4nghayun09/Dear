@@ -7,15 +7,17 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { errorMessage } from '../lib/errorMessage';
 import { colors } from '../lib/theme';
+import { useT } from '../lib/i18n';
 
 // 임시 홈. 매칭 상태(API-007)로 P-005/P-006 분기를 확인하는 용도 — 화면 시안이 오면 교체
-const STATUS_TEXT = { none: '아직 교환 상대가 없어요', waiting: '상대를 찾는 중이에요', matched: '교환 중' };
+const STATUS_KEYS = { none: 'home.statusNone', waiting: 'home.statusWaiting', matched: 'home.statusMatched' };
 
 export default function HomeScreen() {
   const { isLoggedIn, profile, loading, signOut } = useAuth();
   const [match, setMatch] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const t = useT();
 
   const refresh = useCallback(async () => {
     try {
@@ -49,14 +51,16 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <DearLogo width={90} />
-      <Text style={styles.hello}>{profile.nickname}님, 반가워요!</Text>
-      <Text style={styles.meta}>모국어 {profile.native_lang === 'ko' ? '한국어' : '日本語'}</Text>
+      <Text style={styles.hello}>{t('home.hello', { nickname: profile.nickname })}</Text>
+      <Text style={styles.meta}>
+        {t('home.nativeLangLabel')} {t(`signup.langName.${profile.native_lang}`)}
+      </Text>
 
       {!match ? (
         <ActivityIndicator color={colors.primary} />
       ) : (
         <Text style={styles.meta}>
-          {STATUS_TEXT[match.status]}
+          {t(STATUS_KEYS[match.status])}
           {match.partner ? ` · ${match.partner.nickname}` : ''}
         </Text>
       )}
@@ -64,11 +68,11 @@ export default function HomeScreen() {
 
       {match && match.status !== 'matched' && (
         <Pressable onPress={match.status === 'waiting' ? refresh : onRequest} disabled={busy} style={styles.primary}>
-          <Text style={styles.primaryText}>{match.status === 'waiting' ? '새로고침' : '매칭 신청'}</Text>
+          <Text style={styles.primaryText}>{t(match.status === 'waiting' ? 'home.refresh' : 'home.requestMatch')}</Text>
         </Pressable>
       )}
       <Pressable onPress={signOut} style={styles.logout}>
-        <Text style={styles.logoutText}>로그아웃</Text>
+        <Text style={styles.logoutText}>{t('home.logout')}</Text>
       </Pressable>
     </SafeAreaView>
   );

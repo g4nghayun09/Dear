@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../lib/auth';
 import { errorMessage } from '../../lib/errorMessage';
 import { colors } from '../../lib/theme';
+import { useT } from '../../lib/i18n';
 
 // 서버가 로그인 후 dear://auth/callback?token=… 으로 앱을 다시 열었을 때 (주로 안드로이드)
 // 로그인 버튼 쪽에서 이미 토큰을 처리했으면 그냥 첫 화면으로 넘어감
@@ -11,6 +12,7 @@ export default function AuthCallback() {
   const { token, error } = useLocalSearchParams();
   const { isLoggedIn, acceptToken } = useAuth();
   const handled = useRef(false);
+  const t = useT();
 
   useEffect(() => {
     if (handled.current) return;
@@ -20,7 +22,7 @@ export default function AuthCallback() {
         if (error) throw new Error(String(error));
         if (token && !isLoggedIn) await acceptToken(String(token));
       } catch (e) {
-        Alert.alert('로그인 실패', errorMessage(e));
+        Alert.alert(t('login.failTitle'), errorMessage(e));
       }
       router.replace('/');
     })();

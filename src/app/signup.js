@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,21 +17,16 @@ import { ChevronLeft } from '../components/Icons';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../lib/auth';
 import { errorMessage } from '../lib/errorMessage';
-import { NICKNAME_MAX, validateNickname } from '../lib/validation';
+import { NICKNAME_MAX, learningLang, validateNickname } from '../lib/validation';
 import { colors, radius } from '../lib/theme';
+import { useT, useLanguage } from '../lib/i18n';
 
-// 국가 선택 = 모국어(native_lang). 학습 언어는 반대 언어
-const LANG_OPTIONS = [
-  { value: 'ko', label: 'South Korea' },
-  { value: 'ja', label: 'Japan' },
-];
-const LANG_NAME = { ko: '한국어', ja: '일본어' };
-
-function confirmMessage(lang) {
-  if (!lang) return '';
-  const learn = lang === 'ko' ? '일본어' : '한국어';
-  const partner = lang === 'ko' ? '일본인' : '한국인';
-  return `${learn}로 일기를 쓰고 ${partner} 친구와 매칭돼요.\n가입 후에는 바꿀 수 없어요.`;
+// 학습 언어(= 반대 언어)와 매칭 상대 쪽 문구를 모국어 선택에 맞춰 만들어 줌
+function confirmMessage(t, nativeLang) {
+  if (!nativeLang) return '';
+  const learn = t(`signup.langName.${learningLang(nativeLang)}`);
+  const partner = t(`signup.demonym.${learningLang(nativeLang)}`);
+  return t('signup.confirmMessage', { learn, partner });
 }
 
 export default function SignupScreen() {
@@ -43,12 +38,25 @@ export default function SignupScreen() {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const t = useT();
+  const [, setAppLanguage] = useLanguage();
+
+  // 국가 선택 = 모국어(native_lang). 고르는 즉시 앱 UI도 그 언어로 미리 보여줌
+  // 국가명 자체는 UI 언어와 상관없이 항상 영어 표기(South Korea / Japan)로 고정
+  const LANG_OPTIONS = [
+    { value: 'ko', label: 'South Korea' },
+    { value: 'ja', label: 'Japan' },
+  ];
+
+  useEffect(() => {
+    if (nativeLang) setAppLanguage(nativeLang);
+  }, [nativeLang, setAppLanguage]);
 
   if (!loading && !isLoggedIn) return <Redirect href="/login" />;
   if (!loading && profile) return <Redirect href="/home" />;
 
   const trimmed = nickname.trim();
-  
+
   const onBack = async () => {
     await signOut(); // 가입을 취소하면 로그인 화면으로
     router.replace('/login');
@@ -58,7 +66,7 @@ export default function SignupScreen() {
   const onSubmit = () => {
     const nicknameError = validateNickname(trimmed);
     if (nicknameError) return setError(nicknameError);
-    if (!nativeLang) return setError('국가 및 언어를 선택해 주세요.');
+    if (!nativeLang) return setError(t('signup.selectLangError'));
     setError('');
     setConfirming(true);
   };
@@ -86,16 +94,16 @@ export default function SignupScreen() {
         style={[styles.sheetArea, { top: height * 0.44 }]}
       >
         <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 30 }]}>
-          <Pressable onPress={onBack} style={styles.header} hitSlop={12} accessibilityRole="button" accessibilityLabel="뒤로">
+          <Pressable onPress={onBack} style={styles.header} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('common.back')}>
             <ChevronLeft />
-            <Text style={styles.headerText}>가입하기</Text>
+            <Text style={styles.headerText}>{t('signup.title')}</Text>
           </Pressable>
 
-          <Text style={styles.label}>닉네임</Text>
+          <Text style={styles.label}>{t('signup.nicknameLabel')}</Text>
           <TextInput
             value={nickname}
-            onChangeText={(t) => setNickname(t.slice(0, NICKNAME_MAX))}
-            placeholder="디어"
+            onChangeText={(txt) => setNickname(txt.slice(0, NICKNAME_MAX))}
+            placeholder={t('signup.nicknamePlaceholder')}
             placeholderTextColor={colors.placeholder}
             style={styles.input}
             maxLength={NICKNAME_MAX}
@@ -104,7 +112,7 @@ export default function SignupScreen() {
             returnKeyType="done"
           />
 
-          <Text style={[styles.label, styles.labelGap]}>국가 및 언어 설정</Text>
+          <Text style={[styles.label, styles.labelGap]}>{t('signup.countryLangLabel')}</Text>
           <Select value={nativeLang} options={LANG_OPTIONS} onChange={setNativeLang} />
 
           <Text style={styles.error}>{error}</Text>
@@ -117,17 +125,17 @@ export default function SignupScreen() {
             accessibilityRole="button"
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           >
-            <Text style={styles.buttonText}>시작하기</Text>
+            <Text style={styles.buttonText}>{t('signup.start')}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
 
       <ConfirmModal
         visible={confirming}
-        title={`모국어가 ${LANG_NAME[nativeLang] ?? ''}인가요?`}
-        message={confirmMessage(nativeLang)}
-        confirmText="확인"
-        cancelText="다시 선택"
+        title={t('signup.confirmTitle', { name: nativeLang ? t(`signup.langName.${nativeLang}`) : '' })}
+        message={confirmMessage(t, nativeLang)}
+        confirmText={t('common.confirm')}
+        cancelText={t('signup.reselect')}
         loading={saving}
         onCancel={() => setConfirming(false)}
         onConfirm={onConfirm}
