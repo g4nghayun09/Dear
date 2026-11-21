@@ -1,0 +1,23 @@
+package com.jpproject.dear.config;
+
+import com.jpproject.dear.login.LoginInterceptor;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    private final LoginInterceptor loginInterceptor;
+
+    public WebConfig(LoginInterceptor loginInterceptor) {
+        this.loginInterceptor = loginInterceptor;
+    }
+
+    // 로그인이 필요한 경로. 일기(/diaries) 등 기능을 만들 때 여기에 추가한다.
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loginInterceptor)
+                .addPathPatterns("/users/me", "/users/me/**");
+    }
+}
