@@ -15,11 +15,11 @@ public class WebConfig implements WebMvcConfigurer {
         this.loginInterceptor = loginInterceptor;
     }
 
-    // 로그인이 필요한 경로. 일기(/diaries) 등 기능을 만들 때 여기에 추가한다.
+    // 로그인이 필요한 경로. 새 기능을 만들 때 여기에 경로를 추가한다.
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/users/me", "/users/me/**");
+                .addPathPatterns("/users/me", "/users/me/**", "/diaries", "/diaries/**");
     }
 
     // 웹(Expo web)에서 개발할 때 다른 주소(localhost:8081)에서 호출할 수 있게 허용.
