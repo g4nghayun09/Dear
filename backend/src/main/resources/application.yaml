@@ -1,0 +1,36 @@
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+  application:
+    name: dear
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/dear}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+  # 테이블은 Flyway가 만들고(db/migration), JPA는 엔티티와 테이블이 맞는지만 확인
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # 이미 손으로 테이블을 만든 DB에서도 동작: 기존 테이블을 V1로 보고 V2부터 실행
+    baseline-on-migrate: true
+    baseline-version: 1
+
+jwt:
+  secret: ${JWT_SECRET:}                         # 32자 이상. 없으면 서버가 시작되지 않음
+  expiration-ms: ${JWT_EXPIRATION_MS:604800000}  # 기본 7일
+
+# [개발용] X-User-Id 헤더로 로그인 없이 테스트 (DevUserIdFilter, /api/dev/**). 시연·배포 때는 반드시 false
+dear:
+  dev-auth:
+    enabled: ${DEV_AUTH:false}

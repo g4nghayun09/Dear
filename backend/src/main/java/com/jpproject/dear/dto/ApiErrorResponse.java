@@ -1,0 +1,38 @@
+package com.jpproject.dear.dto;
+
+
+import java.util.Map;
+
+public class ApiErrorResponse {
+    private final int status;
+    private final String code;
+    private final String message;
+    private final Map<String, String> errors;
+
+    public ApiErrorResponse(int status, String message, Map<String, String> errors) {
+        this(status, null, message, errors);
+    }
+
+    public ApiErrorResponse(int status, String code, String message, Map<String, String> errors) {
+        this.status = status;
+        this.code = code;
+        this.message = message;
+        this.errors = errors;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Map<String, String> getErrors() {
+        return errors;
+    }
+}
