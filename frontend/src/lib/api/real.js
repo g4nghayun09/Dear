@@ -1,25 +1,23 @@
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { API_URL } from '../config';
 import { request, ApiError } from './client';
 
-// 구글 로그인 후 서버가 돌려보낼 앱 주소 (빌드 앱: dear://auth/callback, Expo Go: exp://…/--/auth/callback)
-export const redirectUri = Linking.createURL('auth/callback');
-
-export function tokenFromUrl(url) {
-  const { queryParams } = Linking.parse(url);
-  if (queryParams?.error) throw new ApiError(401, String(queryParams.error), 'LOGIN_FAILED');
-  return queryParams?.token ? String(queryParams.token) : null;
+// 서버 응답(UserResponse: userId, email, nickname, nativeLang, signupStep)
+// → 앱에서 쓰는 프로필 모양(id, nickname, native_lang). 가입이 끝나지 않았으면 null
+function toProfile(user) {
+  if (!user || user.signupStep !== 'DONE') return null;
+  return { id: user.userId, email: user.email, nickname: user.nickname, native_lang: user.nativeLang };
 }
 
 /*
  * Spring 주소 (명세 API ID 기준)
- * 주소가 바뀌면 이 파일만 고치면 됨
+ * 주소가 바뀌면 이 파일만 고치면 됨. 인증: 로그인 후 모든 요청에 Authorization: Bearer <JWT>
  *
- * API-001 GET    /oauth2/authorization/google?redirect_uri=   → redirect_uri?token=JWT
- * API-003 POST   /api/auth/logout
- * API-004 POST   /api/profiles                   { nickname, native_lang }
- * API-005 GET    /api/profiles/me                → 프로필 | null
+ * API-001 POST   /auth/google                    { idToken } → { token, user }
+ * API-003 POST   /auth/logout
+ * API-004 PATCH  /users/me/nickname              { nickname }      (가입 1단계)
+ *         PATCH  /users/me/native-lang           { nativeLang }    (가입 2단계)
+ * API-005 GET    /users/me                       → user (signupStep: NICKNAME | LANGUAGE | DONE)
+ *
+ * (아래는 서버 구현 전 — 경로는 가안)
  * API-006 POST   /api/matches                    → { status, match }
  * API-007 GET    /api/matches/me                 → { status, match_id, partner, started_at }
  * API-008 POST   /api/matches/me/end             { rating }
@@ -37,24 +35,22 @@ export function tokenFromUrl(url) {
  */
 export const realApi = {
   // ---- 인증·프로필 ----
-  async loginWithGoogle() {
-    const url = `${API_URL}/oauth2/authorization/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
-    const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
-    if (result.type !== 'success') return null; // 창을 닫음 → P-002 유지
-    const token = tokenFromUrl(result.url);
-    if (!token) throw new ApiError(401, 'no token', 'LOGIN_FAILED');
-    return token;
+  // 구글 ID 토큰을 서버에 보내고 우리 서비스의 JWT 를 받는다
+  async loginWithGoogle(idToken) {
+    const res = await request('/auth/google', { method: 'POST', body: { idToken }, auth: false });
+    if (!res?.token) throw new ApiError(401, 'no token', 'LOGIN_FAILED');
+    return res.token;
   },
-  logout: () => request('/api/auth/logout', { method: 'POST' }),
-  createProfile: ({ nickname, native_lang }) =>
-    request('/api/profiles', { method: 'POST', body: { nickname, native_lang } }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  // 닉네임 → 모국어 순서로 저장. 이미 닉네임만 저장된 상태에서 다시 시도해도 안전
+  async createProfile({ nickname, native_lang }) {
+    await request('/users/me/nickname', { method: 'PATCH', body: { nickname } });
+    const user = await request('/users/me/native-lang', { method: 'PATCH', body: { nativeLang: native_lang } });
+    return toProfile(user);
+  },
+  // null 이면 가입이 끝나지 않은 사용자 → 가입하기 화면
   async getMyProfile() {
-    try {
-      return (await request('/api/profiles/me')) ?? null;
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) return null; // 서버가 404로 줘도 처음 로그인으로 처리
-      throw e;
-    }
+    return toProfile(await request('/users/me'));
   },
 
   // ---- 매칭 ----

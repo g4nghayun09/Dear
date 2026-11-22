@@ -69,8 +69,10 @@ export function AuthProvider({ children }) {
     [loadProfile, reset],
   );
 
-  const signInWithGoogle = useCallback(async () => {
-    const newToken = await api.loginWithGoogle();
+  // idToken: 구글에서 받은 ID 토큰 (null 이면 사용자가 창을 닫은 것)
+  const signInWithGoogle = useCallback(async (idToken) => {
+    if (!idToken) return;
+    const newToken = await api.loginWithGoogle(idToken);
     if (newToken) await acceptToken(newToken);
   }, [acceptToken]);
 

@@ -4,6 +4,7 @@ import { Redirect } from 'expo-router';
 import Brand from '../components/Brand';
 import GoogleButton from '../components/GoogleButton';
 import { useAuth } from '../lib/auth';
+import { useGoogleIdToken } from '../lib/googleSignIn';
 import { errorMessage } from '../lib/errorMessage';
 import { colors } from '../lib/theme';
 import { useT } from '../lib/i18n';
@@ -13,13 +14,14 @@ export default function LoginScreen() {
   const { height } = useWindowDimensions();
   const [busy, setBusy] = useState(false);
   const t = useT();
+  const { getIdToken } = useGoogleIdToken();
 
   if (!loading && isLoggedIn) return <Redirect href={profile ? '/home' : '/signup'} />;
 
   const onGoogle = async () => {
     setBusy(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(await getIdToken());
       // 성공하면 로그인 상태가 바뀌면서 위의 Redirect가 가입하기/홈으로 보냄
     } catch (e) {
       Alert.alert(t('login.failTitle'), errorMessage(e));
