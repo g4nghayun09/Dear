@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 // 구글 tokeninfo 엔드포인트로 ID 토큰을 검증한다. (dev 프로필이 아닐 때 사용)
@@ -18,16 +20,17 @@ public class RealGoogleTokenVerifier implements GoogleTokenVerifier {
     private static final String TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token={token}";
 
     private final RestClient restClient = RestClient.create();
-    private final String clientId;
+    // 웹/안드로이드/iOS 클라이언트 ID가 서로 달라서 쉼표로 여러 개를 받는다
+    private final List<String> clientIds;
 
     public RealGoogleTokenVerifier(@Value("${google.client-id:}") String clientId) {
-        this.clientId = clientId;
+        this.clientIds = Arrays.stream(clientId.split(",")).map(String::trim).filter(id -> !id.isEmpty()).toList();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public GoogleUserInfo verify(String idToken) {
-        if (clientId.isBlank()) {
+        if (clientIds.isEmpty()) {
             throw new IllegalStateException("google.client-id(GOOGLE_CLIENT_ID)가 설정되지 않았습니다.");
         }
 
@@ -39,7 +42,7 @@ public class RealGoogleTokenVerifier implements GoogleTokenVerifier {
         }
 
         if (info == null
-                || !clientId.equals(info.get("aud"))
+                || !clientIds.contains(String.valueOf(info.get("aud")))
                 || !"true".equals(String.valueOf(info.get("email_verified")))
                 || info.get("sub") == null
                 || info.get("email") == null) {
