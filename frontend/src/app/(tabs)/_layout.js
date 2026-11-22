@@ -37,9 +37,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopColor: colors.line,
-          height: 62 + insets.bottom,
+          height: 74 + insets.bottom,
           paddingTop: 8,
-          paddingBottom: Math.max(insets.bottom, 8),
+          paddingBottom: Math.max(insets.bottom, 10),
         },
         sceneStyle: { backgroundColor: '#fff' },
       }}
@@ -48,8 +48,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="exchange" options={{ title: t('tabs.exchange'), tabBarIcon: icon(TabMail) }} />
       <Tabs.Screen name="vocab" options={{ title: t('tabs.vocab'), tabBarIcon: icon(TabBook) }} />
       <Tabs.Screen name="mypage" options={{ title: t('tabs.mypage'), tabBarIcon: icon(TabUser) }} />
-      {/* 일기 쓰기: 탭 막대에는 보이지 않지만 하단 탭은 그대로 보임. 홈 탭이 켜진 것으로 표시 */}
-      <Tabs.Screen name="write" options={{ href: null }} />
     </Tabs>
   );
 }

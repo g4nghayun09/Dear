@@ -2,12 +2,12 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Calendar from '../../components/Calendar';
-import DearLogo from '../../components/DearLogo';
-import { Bell } from '../../components/Icons';
-import { api } from '../../lib/api';
-import { colors } from '../../lib/theme';
-import { useT } from '../../lib/i18n';
+import Calendar from '../../../components/Calendar';
+import DearLogo from '../../../components/DearLogo';
+import { Bell } from '../../../components/Icons';
+import { api } from '../../../lib/api';
+import { colors } from '../../../lib/theme';
+import { useT } from '../../../lib/i18n';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -48,7 +48,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <View style={styles.actions}>
-        <Pressable onPress={() => router.push('/write')} style={({ pressed }) => [styles.button, pressed && styles.pressed]} accessibilityRole="button">
+        <Pressable onPress={() => router.push('/home/diary-write')} style={({ pressed }) => [styles.button, pressed && styles.pressed]} accessibilityRole="button">
           <Text style={styles.buttonText}>{t('diary.writeToday')}</Text>
         </Pressable>
         <Pressable onPress={() => router.push('/exchange')} style={({ pressed }) => [styles.button, pressed && styles.pressed]} accessibilityRole="button">

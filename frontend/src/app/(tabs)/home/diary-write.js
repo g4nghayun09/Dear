@@ -2,17 +2,17 @@ import { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DearLogo from '../../components/DearLogo';
-import DiaryBodyInput from '../../components/DiaryBodyInput';
-import DictionaryModal from '../../components/DictionaryModal';
-import { Bell } from '../../components/Icons';
-import { api } from '../../lib/api';
-import { useAuth } from '../../lib/auth';
-import { errorMessage } from '../../lib/errorMessage';
-import { MAX_LENGTH, MIN_LINES, checkDiaryInput } from '../../lib/languageCheck';
-import { colors } from '../../lib/theme';
-import { DIARY_TITLE_MAX, learningLang } from '../../lib/validation';
-import { useT } from '../../lib/i18n';
+import DearLogo from '../../../components/DearLogo';
+import DiaryBodyInput from '../../../components/DiaryBodyInput';
+import DictionaryModal from '../../../components/DictionaryModal';
+import { Bell } from '../../../components/Icons';
+import { api } from '../../../lib/api';
+import { useAuth } from '../../../lib/auth';
+import { errorMessage } from '../../../lib/errorMessage';
+import { MAX_LENGTH, MIN_LINES, checkDiaryInput } from '../../../lib/languageCheck';
+import { colors } from '../../../lib/theme';
+import { DIARY_TITLE_MAX, learningLang } from '../../../lib/validation';
+import { useT } from '../../../lib/i18n';
 
 // 일기 작성 (P-007): 학습 언어로 쓰고, 모르는 단어는 사전에서 찾아 넣고, 상대에게 보낸다
 export default function WriteScreen() {
