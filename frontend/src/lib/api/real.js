@@ -17,14 +17,16 @@ function toProfile(user) {
  *         PATCH  /users/me/native-lang           { nativeLang }    (가입 2단계)
  * API-005 GET    /users/me                       → user (signupStep: NICKNAME | LANGUAGE | DONE)
  *
+ * API-009 POST   /diaries                       { title, content } → 일기 (매칭은 서버가 내 활성 매칭으로 찾음)
+ * API-010 GET    /diaries?matchId=&offset=&limit=20  → 일기 배열 (offset은 limit의 배수)
+ * API-011 GET    /diaries/{id}                   → 일기
+ *         GET    /diaries/calendar?month=2026-11 → { month, days: [내가 쓴 날짜] }
+ *
  * (아래는 서버 구현 전 — 경로는 가안)
  * API-006 POST   /api/matches                    → { status, match }
  * API-007 GET    /api/matches/me                 → { status, match_id, partner, started_at }
  * API-008 POST   /api/matches/me/end             { rating }
  * API-019 GET    /api/matches/past
- * API-009 POST   /api/diaries                    { match_id, title, content }
- * API-010 GET    /api/diaries?match_id=&offset=&limit=20
- * API-011 GET    /api/diaries/{id}               → 일기 + corrections + match_status
  * API-018 POST   /api/diaries/{id}/read
  * API-012 POST   /api/diaries/{id}/corrections   { items }
  * API-013 GET    /api/dictionary?q=&from=
@@ -33,6 +35,15 @@ function toProfile(user) {
  * API-016 DELETE /api/vocab/{id}
  * API-017 PATCH  /api/vocab/{id}
  */
+// 서버 일기(camelCase) → 앱에서 쓰는 모양
+function toDiary(d) {
+  return {
+    id: d.diaryId, match_id: d.matchId, author_id: d.authorId, mine: d.mine, title: d.title,
+    language: d.language, content: d.content, status: d.status,
+    created_at: d.createdAt, corrected_at: d.correctedAt, read_at: d.readAt,
+  };
+}
+
 export const realApi = {
   // ---- 인증·프로필 ----
   // 구글 ID 토큰을 서버에 보내고 우리 서비스의 JWT 를 받는다
@@ -60,11 +71,17 @@ export const realApi = {
   getPastMatches: () => request('/api/matches/past'),
 
   // ---- 일기 ----
-  sendDiary: ({ match_id, title, content }) =>
-    request('/api/diaries', { method: 'POST', body: { match_id, title: title || null, content } }),
-  getDiaries: (matchId, { offset = 0, limit = 20 } = {}) =>
-    request('/api/diaries', { query: { match_id: matchId, offset, limit } }),
-  getDiary: (id) => request(`/api/diaries/${id}`),
+  async sendDiary({ title, content }) {
+    return toDiary(await request('/diaries', { method: 'POST', body: { title: title || null, content } }));
+  },
+  async getDiaries(matchId, { offset = 0, limit = 20 } = {}) {
+    return (await request('/diaries', { query: { matchId, offset, limit } })).map(toDiary);
+  },
+  async getDiary(id) {
+    return toDiary(await request(`/diaries/${id}`));
+  },
+  // month: '2026-11' → { month, days: [1, 2, ...] } (내가 일기를 쓴 날)
+  getDiaryCalendar: (month) => request('/diaries/calendar', { query: { month } }),
   markDiaryRead: (id) => request(`/api/diaries/${id}/read`, { method: 'POST' }),
 
   // ---- 첨삭 ----

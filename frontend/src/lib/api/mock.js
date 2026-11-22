@@ -1,6 +1,7 @@
 import { ApiError } from './client';
 import { getJSON, setJSON, removeKey } from '../tokenStorage';
-import { countTextLines } from '../validation';
+import { countTextLines, learningLang } from '../validation';
+import { checkDiaryInput } from '../languageCheck';
 
 // 서버 없이 화면을 만들 때 쓰는 가짜 API. real.js 와 같은 함수·같은 응답 모양
 // 프로필만 기기에 저장, 나머지는 앱을 다시 켜면 초기화됨
@@ -24,6 +25,22 @@ const db = {
   corrections: [],
   vocab: [],
 };
+
+// 사전 검색 화면 확인용 샘플 단어
+const DICTIONARY = [
+  { ja: '白い', reading: 'しろい', ko: '하얗다' },
+  { ja: '今日', reading: 'きょう', ko: '오늘' },
+  { ja: '放課後', reading: 'ほうかご', ko: '방과 후' },
+  { ja: '友達', reading: 'ともだち', ko: '친구' },
+  { ja: '音楽', reading: 'おんがく', ko: '음악' },
+  { ja: '天気', reading: 'てんき', ko: '날씨' },
+  { ja: '学校', reading: 'がっこう', ko: '학교' },
+  { ja: '寒い', reading: 'さむい', ko: '춥다' },
+  { ja: '楽しい', reading: 'たのしい', ko: '즐겁다' },
+  { ja: '明日', reading: 'あした', ko: '내일' },
+  { ja: '空', reading: 'そら', ko: '하늘' },
+  { ja: '嬉しい', reading: 'うれしい', ko: '기쁘다' },
+];
 
 function partnerFor(lang) {
   return lang === 'ko' ? { nickname: 'はると', native_lang: 'ja' } : { nickname: '민지', native_lang: 'ko' };
@@ -107,17 +124,36 @@ export const mockApi = {
   },
 
   // ---- 일기 ----
-  async sendDiary({ match_id, title, content }) {
+  async sendDiary({ title, content }) {
     await wait();
-    if (!db.match || db.match.id !== match_id) fail(403, 'NO_ACTIVE_MATCH');
-    if (!content || content.length > 1000 || countTextLines(content) < 2) fail(400, 'INVALID_INPUT');
+    const me = await myProfile();
+    if (!me) fail(400, 'INVALID_INPUT');
     if (title && title.length > 30) fail(400, 'INVALID_INPUT');
+    if (!content || countTextLines(content) < 2) fail(400, 'INVALID_INPUT');
+    const language = learningLang(me.native_lang);
+    const check = checkDiaryInput(content, language);
+    if (check.invalidChars.length > 0) fail(400, 'INVALID_LANGUAGE');
+    if (!check.canSend) fail(400, 'INVALID_INPUT');
+    // 서버 없이 화면을 확인할 수 있게, 활성 매칭이 없으면 가짜 매칭을 바로 만들어 준다
+    if (!db.match) {
+      db.match = { id: uid(), partner: partnerFor(me.native_lang), started_at: now() };
+    }
     const diary = {
-      id: uid(), match_id, author_id: ME, title: title || null, content,
+      id: uid(), match_id: db.match.id, author_id: ME, mine: true, title: title || null, language, content,
       status: 'sent', created_at: now(), corrected_at: null, read_at: null,
     };
     db.diaries.push(diary);
     return diary;
+  },
+  // month: '2026-11' → 내가 쓴 날짜(일)
+  async getDiaryCalendar(month) {
+    await wait(150);
+    const days = [...new Set(
+      db.diaries
+        .filter((d) => d.author_id === ME && d.created_at.startsWith(month))
+        .map((d) => new Date(d.created_at).getDate()),
+    )].sort((x, y) => x - y);
+    return { month, days };
   },
   async getDiaries(matchId, { offset = 0, limit = 20 } = {}) {
     await wait(250);
@@ -162,12 +198,17 @@ export const mockApi = {
   },
 
   // ---- 단어장·학습 ----
+  // from: 결과 단어의 언어(학습 언어). 'ja' 면 일본어 단어를 한국어 뜻으로 찾는다
   async searchDictionary(q, from) {
-    await wait();
-    const sample = from === 'ja'
-      ? [{ term: '放課後', reading: 'ほうかご', meaning: '방과 후' }]
-      : [{ term: '방과 후', reading: 'ほうかご', meaning: '放課後' }];
-    return { results: q ? sample : [] };
+    await wait(250);
+    const query = (q ?? '').trim();
+    const rows = DICTIONARY.filter((w) => !query || w.ko.includes(query) || w.ja.includes(query));
+    const results = rows.slice(0, 20).map((w) =>
+      from === 'ja'
+        ? { term: w.ja, reading: w.reading, meaning: w.ko }
+        : { term: w.ko, reading: null, meaning: w.ja },
+    );
+    return { results };
   },
   async saveVocab(item) {
     await wait();

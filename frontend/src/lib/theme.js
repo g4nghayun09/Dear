@@ -8,6 +8,12 @@ export const colors = {
   background: '#FFFFFF',
   sheetShadow: '#000000',
   error: '#C0504D',
+  tabInactive: '#A99B9C',
+  calendarMark: '#9FBFE3', // 일기를 쓴 날
+  paper: '#EFE8E8', // 일기 카드
+  subtleButton: '#E9E3E3', // 취소 버튼
+  highlight: '#F28A1B', // 사전에서 넣은 단어
+  line: '#EFEFEF',
 };
 
 export const radius = {

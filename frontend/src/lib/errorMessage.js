@@ -9,6 +9,7 @@ const CODE_KEYS = {
   MATCH_ENDED: 'error.matchEnded',
   ALREADY_CORRECTED: 'error.alreadyCorrected',
   INVALID_INPUT: 'error.invalidInput',
+  INVALID_LANGUAGE: 'error.invalidLanguage',
   DICTIONARY_UNAVAILABLE: 'error.dictionaryUnavailable',
   NICKNAME_DUPLICATED: 'error.nicknameDuplicated',
   VOCAB_DUPLICATED: 'error.vocabDuplicated',
