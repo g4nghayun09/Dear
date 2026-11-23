@@ -47,11 +47,11 @@ function partnerFor(lang) {
 }
 
 function seedDiary(match, lang) {
-  // 상대가 먼저 쓴 일기 하나 (내 학습 언어로 쓰여 있음)
+  // 상대가 먼저 쓴 일기 하나 (상대의 학습 언어 = 나의 모국어로 쓰여 있음 → 내가 첨삭할 수 있음)
   const content =
     lang === 'ko'
-      ? '今日は放課後に友達とカフェに行きました。\nケーキがとてもおいしかったです。'
-      : '오늘은 친구랑 한강에 갔어요.\n라면을 먹었어요.';
+      ? '오늘은 친구랑 한강에 갔어요.\n라면을 먹었어요.'
+      : '今日は放課後に友達とカフェに行きました。\nケーキがとてもおいしかったです。';
   db.diaries.push({
     id: uid(), match_id: match.id, author_id: 'partner', title: null, content,
     status: 'sent', created_at: now(), corrected_at: null, read_at: null,

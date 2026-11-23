@@ -1,16 +1,18 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../lib/theme';
 import { useT } from '../lib/i18n';
 
 const CELL = 46;
 
 /**
- * 한 달 달력 (홈 화면)
+ * 한 달 달력 (홈 화면 / 단어장 "일기별 보기")
  *  year, month : 표시할 달 (month 는 1~12)
  *  today       : 오늘이면 테두리로 표시할 일(day). 다른 달이면 null
  *  markedDays  : 일기를 쓴 날(일) 배열 → 파란 원
+ *  selectedDay : 사용자가 고른 날(일) → 테두리 표시 (단어장에서 씀, 없으면 today만 표시)
+ *  onDayPress  : (day) => void. 주면 날짜를 누를 수 있게 됨 (단어장에서 씀)
  */
-export default function Calendar({ year, month, today = null, markedDays = [] }) {
+export default function Calendar({ year, month, today = null, markedDays = [], selectedDay = null, onDayPress }) {
   const t = useT();
   const marked = new Set(markedDays);
   const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0=일요일
@@ -36,16 +38,19 @@ export default function Calendar({ year, month, today = null, markedDays = [] })
           {week.map((day, di) => (
             <View key={di} style={styles.cell}>
               {day !== null && (
-                <View
+                <Pressable
+                  disabled={!onDayPress}
+                  onPress={() => onDayPress?.(day)}
                   style={[
                     styles.day,
                     marked.has(day) && styles.marked,
-                    day === today && styles.today,
+                    (day === today || day === selectedDay) && styles.today,
                   ]}
                   accessibilityLabel={`${month}/${day}`}
+                  accessibilityRole={onDayPress ? 'button' : undefined}
                 >
                   <Text style={[styles.dayText, marked.has(day) && styles.markedText]}>{day}</Text>
-                </View>
+                </Pressable>
               )}
             </View>
           ))}

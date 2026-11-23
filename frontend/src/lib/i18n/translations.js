@@ -61,6 +61,14 @@ export const translations = {
       dictBasicForm: '기본형',
       dictEmpty: '검색 결과가 없어요',
     },
+    vocab: {
+      allView: '전체보기',
+      byDiaryView: '일기별 보기',
+      emptyAll: '아직 저장된 단어가 없어요',
+      noDiaryThatDay: '작성한 일기가 없어요',
+      noWordsThatDay: '이 날은 사전으로 넣은 단어가 없어요',
+      correctionTag: '첨삭',
+    },
     error: {
       alreadyMatched: '이미 교환 중인 상대가 있어요.',
       noActiveMatch: '교환 상대가 없어요.',
@@ -155,6 +163,14 @@ export const translations = {
       dictSearchPlaceholder: '意味で検索',
       dictBasicForm: '基本形',
       dictEmpty: '検索結果がありません',
+    },
+    vocab: {
+      allView: 'すべて見る',
+      byDiaryView: '日記別に見る',
+      emptyAll: 'まだ保存した単語がありません',
+      noDiaryThatDay: '書いた日記がありません',
+      noWordsThatDay: 'この日は辞書で入れた単語がありません',
+      correctionTag: '添削',
     },
     error: {
       alreadyMatched: 'すでに交換中の相手がいます。',
