@@ -3,7 +3,7 @@
 // - 교환 중이면: 나의 일기 / 친구 일기 목록 → 누르면 일기 상세
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DearLogo from '../../../components/DearLogo';
 import { Bell } from '../../../components/Icons';
@@ -51,10 +51,11 @@ function formatDate(iso) {
 export default function ExchangeScreen() {
   const [uiLang] = useLanguage();
   const tx = TEXT[uiLang] ?? TEXT.ko;
+  const { tab: initialTab } = useLocalSearchParams(); // 홈의 "받은 일기 보러가기"에서 friend로 바로 열어줌
 
   const [match, setMatch] = useState(null); // API-007 응답, null = 확인 중
   const [diaries, setDiaries] = useState(null);
-  const [tab, setTab] = useState('mine'); // mine | friend
+  const [tab, setTab] = useState(initialTab === 'friend' ? 'friend' : 'mine'); // mine | friend
   const [error, setError] = useState('');
 
   const loadDiaries = useCallback(async (matchId) => {

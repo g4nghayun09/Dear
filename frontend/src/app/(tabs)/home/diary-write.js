@@ -42,7 +42,7 @@ export default function WriteScreen() {
   // 커서 위치는 평소에는 입력칸에 맡기고(IME 입력 중 커서가 튀지 않게), 단어를 넣은 직후에만 지정한다
   const selectionRef = useRef(null);
   const [forcedSelection, setForcedSelection] = useState(undefined);
-  const [words, setWords] = useState([]); // 사전에서 넣은 단어 (주황색 표시)
+  const [wordItems, setWordItems] = useState([]); // 사전에서 넣은 단어 (주황색 표시 + 전송 시 단어장에 저장)
   const [dictOpen, setDictOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +50,7 @@ export default function WriteScreen() {
   const mtx = MATCH_TEXT[uiLang] ?? MATCH_TEXT.ko;
   const [matchStatus, setMatchStatus] = useState(null); // null(확인 중) | none | waiting | matched
   const mounted = useRef(true);
-  const draft = useRef({ title: '', content: '' }); // 매칭을 기다리는 동안 보낼 일기
+  const draft = useRef({ title: '', content: '', words: [] }); // 매칭을 기다리는 동안 보낼 일기
 
   // 입력은 막지 않고(한글/일본어 조합 중에 글자가 깨지지 않게), 보내기만 막는다
   const [visualLines, setVisualLines] = useState(0); // 입력칸에 보이는 줄 수 (자동 줄바꿈 포함)
@@ -67,7 +67,7 @@ export default function WriteScreen() {
     const start = selectionRef.current?.start ?? content.length;
     const end = selectionRef.current?.end ?? start;
     setContent(content.slice(0, start) + item.term + content.slice(end));
-    setWords((prev) => (prev.includes(item.term) ? prev : [...prev, item.term]));
+    setWordItems((prev) => (prev.some((w) => w.term === item.term) ? prev : [...prev, item]));
     const pos = start + item.term.length;
     selectionRef.current = { start: pos, end: pos };
     setForcedSelection({ start: pos, end: pos });
@@ -86,9 +86,14 @@ export default function WriteScreen() {
     };
   }, []);
 
-  // API-009 일기 전송
-  const sendNow = useCallback(async ({ title: t0, content: c0 }) => {
+  // API-009 일기 전송 + 사전에서 넣은 단어는 보낼 때 한꺼번에 단어장에 저장 (실패해도 전송 자체는 그대로 진행)
+  const sendNow = useCallback(async ({ title: t0, content: c0, words: w0 = [] }) => {
     await api.sendDiary({ title: t0, content: c0 });
+    if (w0.length) {
+      await Promise.allSettled(
+        w0.map((w) => api.saveVocab({ term: w.term, reading: w.reading ?? null, meaning: w.meaning, source: 'search' })),
+      );
+    }
     router.replace('/home'); // 홈 달력에 오늘이 파랗게 표시됨
   }, []);
 
@@ -112,7 +117,7 @@ export default function WriteScreen() {
   const onSend = async () => {
     setSending(true);
     setError('');
-    draft.current = { title: title.trim(), content };
+    draft.current = { title: title.trim(), content, words: wordItems };
     try {
       if (matchStatus === 'matched') {
         await sendNow(draft.current);
@@ -183,7 +188,7 @@ export default function WriteScreen() {
                 selectionRef.current = sel;
                 setForcedSelection(undefined);
               }}
-              highlights={words}
+              highlights={wordItems.map((w) => w.term)}
               onLineCountChange={setVisualLines}
               placeholder={t('diary.bodyPlaceholder', { lang: langName })}
               minHeight={300}
