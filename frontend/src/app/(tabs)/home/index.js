@@ -51,7 +51,11 @@ export default function HomeScreen() {
         <Pressable onPress={() => router.push('/home/diary-write')} style={({ pressed }) => [styles.button, pressed && styles.pressed]} accessibilityRole="button">
           <Text style={styles.buttonText}>{t('diary.writeToday')}</Text>
         </Pressable>
-        <Pressable onPress={() => router.push('/exchange')} style={({ pressed }) => [styles.button, pressed && styles.pressed]} accessibilityRole="button">
+        <Pressable
+          onPress={() => router.push({ pathname: '/exchange', params: { tab: 'friend' } })}
+          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+          accessibilityRole="button"
+        >
           <Text style={styles.buttonText}>{t('diary.viewReceived')}</Text>
         </Pressable>
       </View>
