@@ -106,6 +106,7 @@ const SAMPLES = {
 };
 
 function connectionError(e) {
+  if (e.code === 'BAD_RESPONSE') return '서버가 아닌 곳에서 응답이 왔어요. 앱 .env 의 EXPO_PUBLIC_API_URL 이 http:// 로 시작하는지 확인해 주세요. (예: http://localhost:8080)';
   if (e.status === 404 || e.status === 401) return '시연 API가 꺼져 있어요. backend/dear/.env 에 DEV_AUTH=true 를 넣고 서버를 다시 켜 주세요.';
   return `서버와 연결하지 못했어요 (${e.code ?? e.status}). 앱 .env 의 서버 주소와 Wi-Fi를 확인해 주세요.`;
 }
@@ -148,6 +149,10 @@ function MatchDemo() {
     setResults([]);
     try {
       const list = await devApi.prepareTestUsers(); // 테스트 사용자 준비 + 이전 시연 기록 초기화
+      if (!Array.isArray(list)) {
+        // 서버가 아닌 곳(주소 오류·mock 모드)에서 응답이 온 경우
+        throw Object.assign(new Error('BAD_RESPONSE'), { code: 'BAD_RESPONSE' });
+      }
       setUsers(list);
       const byEmail = Object.fromEntries(list.map((x) => [x.email, x.user_id]));
       const u = { ko1: byEmail['test.ko1@example.com'], ja: byEmail['test.ja1@example.com'], ko2: byEmail['test.ko2@example.com'] };
@@ -227,7 +232,9 @@ function LanguageDemo() {
   const askServer = async () => {
     setBusy(true);
     try {
-      setServer(await devApi.languageCheck(content, lang));
+      const res = await devApi.languageCheck(content, lang);
+      if (!res || typeof res !== 'object') throw Object.assign(new Error('BAD_RESPONSE'), { code: 'BAD_RESPONSE' });
+      setServer(res);
     } catch (e) {
       setServer({ failed: true, message: connectionError(e) });
     } finally {

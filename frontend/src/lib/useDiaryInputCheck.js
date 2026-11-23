@@ -11,6 +11,7 @@
 import { useMemo } from 'react';
 import { checkDiaryInput } from './languageCheck';
 
-export default function useDiaryInputCheck(content, lang) {
-  return useMemo(() => checkDiaryInput(content, lang), [content, lang]);
+// visualLines: DiaryBodyInput 의 onLineCountChange 로 받은 화면 줄 수 (선택)
+export default function useDiaryInputCheck(content, lang, visualLines = 0) {
+  return useMemo(() => checkDiaryInput(content, lang, visualLines), [content, lang, visualLines]);
 }

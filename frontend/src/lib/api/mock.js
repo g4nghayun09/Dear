@@ -1,7 +1,7 @@
 import { ApiError } from './client';
 import { getJSON, setJSON, removeKey } from '../tokenStorage';
-import { countTextLines, learningLang } from '../validation';
-import { checkDiaryInput } from '../languageCheck';
+import { learningLang } from '../validation';
+import { MIN_LINES, checkDiaryInput, meetsServerLength } from '../languageCheck';
 
 // 서버 없이 화면을 만들 때 쓰는 가짜 API. real.js 와 같은 함수·같은 응답 모양
 // 프로필만 기기에 저장, 나머지는 앱을 다시 켜면 초기화됨
@@ -135,9 +135,9 @@ export const mockApi = {
     const me = await myProfile();
     if (!me) fail(400, 'INVALID_INPUT');
     if (title && title.length > 30) fail(400, 'INVALID_INPUT');
-    if (!content || countTextLines(content) < 2) fail(400, 'INVALID_INPUT');
+    if (!content || !meetsServerLength(content)) fail(400, 'INVALID_INPUT');
     const language = learningLang(me.native_lang);
-    const check = checkDiaryInput(content, language);
+    const check = checkDiaryInput(content, language, MIN_LINES); // 분량은 위에서 서버 규칙으로 검사함
     if (check.invalidChars.length > 0) fail(400, 'INVALID_LANGUAGE');
     if (!check.canSend) fail(400, 'INVALID_INPUT');
     // 서버 없이 화면을 확인할 수 있게, 활성 매칭이 없으면 가짜 매칭을 바로 만들어 준다

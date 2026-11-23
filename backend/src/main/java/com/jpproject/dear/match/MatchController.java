@@ -1,5 +1,7 @@
 package com.jpproject.dear.match;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,11 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jpproject.dear.common.auth.CurrentUser;
 import com.jpproject.dear.match.dto.EndMatchResponse;
+import com.jpproject.dear.match.dto.MatchHistoryItem;
 import com.jpproject.dear.match.dto.MatchStatusResponse;
 
 import lombok.RequiredArgsConstructor;
 
-/** 매칭 API (API 명세서 v3: API-006, 007, 008, 020) */
+/** 매칭 API (API 명세서 v3: API-006, 007, 008, 019, 020) */
 @RestController
 @RequestMapping("/api/matches")
 @RequiredArgsConstructor
@@ -39,6 +42,12 @@ public class MatchController {
     @PostMapping("/me/end")
     public EndMatchResponse endMatch(@RequestAttribute(CurrentUser.ID) Long userId) {
         return matchService.endMatch(userId);
+    }
+
+    /** API-019 내 매칭 기록 (진행 중 + 지난 매칭) */
+    @GetMapping("/past")
+    public List<MatchHistoryItem> getHistory(@RequestAttribute(CurrentUser.ID) Long userId) {
+        return matchService.getHistory(userId);
     }
 
     /** API-020 매칭 대기 취소 */

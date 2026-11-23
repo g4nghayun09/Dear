@@ -16,11 +16,17 @@ export function splitByWords(text, highlights) {
  * TextInput 은 글자 일부만 색을 바꿀 수 없어서, 같은 글자를 색 입힌 Text 로 아래에 깔고
  * 그 위에 글자가 투명한 TextInput 을 겹친다. (두 글자 스타일이 같아야 줄이 어긋나지 않음)
  */
-export default function DiaryBodyInput({ value, onChangeText, selection, onSelectionChange, highlights = [], placeholder, minHeight = 240 }) {
+// onLineCountChange(n): 화면에 보이는 줄 수 (자동 줄바꿈 포함) — 2줄 이상 규칙에 씀 (강태인)
+export default function DiaryBodyInput({ value, onChangeText, selection, onSelectionChange, highlights = [], placeholder, minHeight = 240, onLineCountChange }) {
   return (
     <View style={[styles.wrap, { minHeight }]}>
       {/* 아래층: 보이는 글자 (사전 단어는 주황색). 끝의 공백은 마지막 줄 높이를 유지하려는 용도 */}
-      <Text style={styles.text} pointerEvents="none" accessible={false}>
+      <Text
+        style={styles.text}
+        pointerEvents="none"
+        accessible={false}
+        onLayout={(e) => onLineCountChange?.(value ? Math.max(1, Math.round(e.nativeEvent.layout.height / LINE_HEIGHT)) : 0)}
+      >
         {splitByWords(value, highlights).map((seg, i) => (
           <Text key={i} style={seg.mark ? styles.mark : null}>{seg.text}</Text>
         ))}
@@ -45,7 +51,8 @@ export default function DiaryBodyInput({ value, onChangeText, selection, onSelec
   );
 }
 
-const textStyle = { fontSize: 14, lineHeight: 24, color: colors.text, padding: 0, margin: 0 };
+const LINE_HEIGHT = 24;
+const textStyle = { fontSize: 14, lineHeight: LINE_HEIGHT, color: colors.text, padding: 0, margin: 0 };
 
 const styles = StyleSheet.create({
   wrap: { position: 'relative' },

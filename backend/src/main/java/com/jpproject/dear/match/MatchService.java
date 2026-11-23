@@ -1,5 +1,6 @@
 package com.jpproject.dear.match;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,6 +11,7 @@ import com.jpproject.dear.common.ApiException;
 import com.jpproject.dear.common.ErrorCode;
 import com.jpproject.dear.match.MatchUserReader.MatchUser;
 import com.jpproject.dear.match.dto.EndMatchResponse;
+import com.jpproject.dear.match.dto.MatchHistoryItem;
 import com.jpproject.dear.match.dto.MatchStatusResponse;
 import com.jpproject.dear.match.dto.PartnerResponse;
 
@@ -95,6 +97,21 @@ public class MatchService {
         MatchQueue waiting = queueRepository.findById(me)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_WAITING));
         queueRepository.delete(waiting);
+    }
+
+    /** API-019 내 매칭 기록 (마이 화면). 진행 중인 매칭이 맨 위, 나머지는 최신순 */
+    @Transactional(readOnly = true)
+    public List<MatchHistoryItem> getHistory(Long me) {
+        return matchRepository.findAllByMember(me).stream()
+                .sorted((a, b) -> Boolean.compare(b.isActive(), a.isActive()))
+                .map(m -> {
+                    PartnerResponse partner = userReader.find(m.partnerOf(me))
+                            .map(u -> new PartnerResponse(u.nickname(), u.nativeLang()))
+                            .orElse(null);
+                    return new MatchHistoryItem(m.getId(), m.isActive() ? "active" : "ended",
+                            partner, m.getCreatedAt(), m.getEndedAt());
+                })
+                .toList();
     }
 
     // ── 다른 기능에서 쓰는 메서드 ──

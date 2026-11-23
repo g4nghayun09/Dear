@@ -17,6 +17,8 @@ public class LanguageValidator {
 
     public static final int MAX_LENGTH = 1000;
     public static final int MIN_LINES = 2;
+    // 앱은 "화면에 보이는 줄"로 2줄을 세고, 서버는 화면을 모르니 "엔터 2줄 이상 또는 20자 이상"이면 통과 (앱 languageCheck.js 와 같은 규칙)
+    public static final int MIN_CHARS = 20;
 
     private static final String COMMON_PUNCT = ".,!?'\"()~…！？（）・：；-";
 
@@ -49,7 +51,7 @@ public class LanguageValidator {
         if (content.codePointCount(0, content.length()) > MAX_LENGTH) {
             throw invalid("INVALID_INPUT", MAX_LENGTH + "자 이하로 써 주세요.");
         }
-        if (countLines(content) < MIN_LINES) {
+        if (countLines(content) < MIN_LINES && content.strip().codePointCount(0, content.strip().length()) < MIN_CHARS) {
             throw invalid("INVALID_INPUT", MIN_LINES + "줄 이상 써 주세요.");
         }
         List<String> chars = findInvalidChars(content, lang);

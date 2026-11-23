@@ -153,7 +153,7 @@ export default function MatchScreen() {
             <PillButton title={tx.cancel} variant="text" onPress={cancel} disabled={busy} />
           </>
         )}
-        {status === 'matched' && <PillButton title={tx.start} onPress={() => router.replace('/home')} />}
+        {status === 'matched' && <PillButton title={tx.start} onPress={() => router.replace('/exchange')} />}
         {!match && !!error && <PillButton title={tx.retry} variant="outline" onPress={load} />}
       </View>
     </SafeAreaView>
