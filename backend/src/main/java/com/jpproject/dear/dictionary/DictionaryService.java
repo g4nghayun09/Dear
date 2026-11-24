@@ -16,6 +16,7 @@ public class DictionaryService {
 
     private final DictionaryRepository dictionaryRepository;
     private final KrdictClient krdictClient;
+    private final DeepLClient deepLClient;
 
     public DictionaryResponse search(String q, String from) {
         // 1) 잘못된 요청 막기: from 은 "ja"/"ko" 만, 검색어는 30자까지
@@ -57,6 +58,18 @@ public class DictionaryService {
                         ? new DictionaryResponse.Item(w.getJapanLanguage(), w.getReading(), w.getKoreaLanguage())
                         : new DictionaryResponse.Item(w.getKoreaLanguage(), null, w.getJapanLanguage()))
                 .toList();
+
+        // 5) 일본어로 검색(from=ko)했는데 DB 사전에 없으면 DeepL 로 한국어 뜻을 번역해서 보여준다
+        if (items.isEmpty() && fromKo && !q.isEmpty() && deepLClient.isEnabled()) {
+            try {
+                String korean = deepLClient.translateJaToKo(q);
+                if (!korean.isEmpty() && !korean.equals(q)) {   // 번역이 그대로면(모르는 글자 등) 결과 없음으로 둔다
+                    items = List.of(new DictionaryResponse.Item(korean, null, q));
+                }
+            } catch (Exception e) {
+                log.warn("DeepL 번역 실패, 결과 없이 돌려줍니다: {}", e.toString());
+            }
+        }
 
         return new DictionaryResponse(items);
     }

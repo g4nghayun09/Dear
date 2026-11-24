@@ -35,6 +35,11 @@ krdict:
   api-key: ${KRDICT_API_KEY:}
   base-url: https://krdict.korean.go.kr/api/search
 
+# DeepL 번역 API (일본어로 검색할 때 일본어→한국어). 무료 키(:fx 로 끝남)는 api-free 주소, 유료 키는 https://api.deepl.com/v2/translate
+deepl:
+  api-key: ${DEEPL_API_KEY:}
+  base-url: ${DEEPL_BASE_URL:https://api-free.deepl.com/v2/translate}
+
 # [개발용] X-User-Id 헤더로 로그인 없이 테스트 (DevUserIdFilter, /api/dev/**). 시연·배포 때는 반드시 false
 dear:
   dev-auth:
