@@ -44,7 +44,8 @@ export default function VocabDayScreen() {
     };
   }, [dayNum]);
 
-  const tagLabel = (item) => (item.source === 'correction' ? t('vocab.correctionTag') : t('diary.dictBasicForm'));
+  // 실제 품사(명사/동사/형용사 등)만 보여주고, 모르면 태그 자체를 안 보여준다
+  const tagLabel = (item) => item.pos || null;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>

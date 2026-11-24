@@ -20,7 +20,7 @@ const TEXT = {
     untitled: '제목 없음',
     emptyMine: '아직 보낸 일기가 없어요.\n홈에서 오늘의 일기를 써 보세요.',
     emptyFriend: '아직 받은 일기가 없어요',
-    corrected: '첨삭',
+    corrected: '완료',
     noMatchTitle: '아직 교환 상대가 없어요',
     noMatchDesc: '홈에서 오늘의 일기를 쓰고 매칭해 보세요.',
     waitingTitle: '교환일기 친구를 찾는 중이에요',
@@ -33,7 +33,7 @@ const TEXT = {
     untitled: 'タイトルなし',
     emptyMine: 'まだ送った日記がありません。\nホームで今日の日記を書いてみましょう。',
     emptyFriend: 'まだ届いた日記がありません',
-    corrected: '添削',
+    corrected: '完了',
     noMatchTitle: 'まだ交換相手がいません',
     noMatchDesc: 'ホームで今日の日記を書いてマッチングしてみましょう。',
     waitingTitle: '交換日記の友だちを探しています',
@@ -116,7 +116,7 @@ export default function ExchangeScreen() {
         {header}
         <View style={styles.noMatch}>
           <Text style={styles.noMatchTitle}>{waiting ? tx.waitingTitle : tx.noMatchTitle}</Text>
-          <Text style={styles.empty}>{error || (waiting ? tx.waitingDesc : tx.noMatchDesc)}</Text>
+          <Text style={[styles.empty, styles.noMatchDesc]}>{error || (waiting ? tx.waitingDesc : tx.noMatchDesc)}</Text>
         </View>
       </SafeAreaView>
     );
@@ -207,5 +207,6 @@ const styles = StyleSheet.create({
   },
   noMatch: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 28 },
   noMatchTitle: { fontSize: 15, fontWeight: '600', color: colors.text, textAlign: 'center' },
+  noMatchDesc: { marginTop: 4 },
   empty: { marginTop: 40, textAlign: 'center', fontSize: 13, lineHeight: 20, color: colors.placeholder },
 });

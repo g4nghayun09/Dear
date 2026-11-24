@@ -85,9 +85,11 @@ export default function DictionaryModal({ visible, lang, onPick, onClose }) {
                     style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                     accessibilityRole="button"
                   >
-                    <View style={styles.tag}>
-                      <Text style={styles.tagText}>{t('diary.dictBasicForm')}</Text>
-                    </View>
+                    {!!item.pos && (
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>{item.pos}</Text>
+                      </View>
+                    )}
                     <View style={styles.cardRow}>
                       <View style={styles.termBox}>
                         <Text style={styles.term}>{item.term}</Text>

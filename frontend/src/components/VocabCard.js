@@ -5,9 +5,11 @@ import { colors, radius } from '../lib/theme';
 export default function VocabCard({ item, tagLabel }) {
   return (
     <View style={styles.card}>
-      <View style={styles.tag}>
-        <Text style={styles.tagText}>{tagLabel}</Text>
-      </View>
+      {!!tagLabel && (
+        <View style={styles.tag}>
+          <Text style={styles.tagText}>{tagLabel}</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <View style={styles.termBox}>
           <Text style={styles.term}>{item.term}</Text>
@@ -27,5 +29,5 @@ const styles = StyleSheet.create({
   termBox: { flexShrink: 1 },
   term: { fontSize: 18, fontWeight: '600', color: colors.text },
   reading: { marginTop: 2, fontSize: 10, color: colors.placeholder },
-  meaning: { fontSize: 13, color: colors.text, flexShrink: 1, textAlign: 'right' },
+  meaning: { fontSize: 16, color: colors.text, flexShrink: 1, textAlign: 'right' },
 });

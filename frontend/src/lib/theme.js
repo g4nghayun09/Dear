@@ -12,7 +12,8 @@ export const colors = {
   calendarMark: '#9FBFE3', // 일기를 쓴 날
   paper: '#EFE8E8', // 일기 카드
   subtleButton: '#E9E3E3', // 취소 버튼
-  highlight: '#F28A1B', // 사전에서 넣은 단어
+  highlight: '#F28A1B', // 사전에서 넣은 단어 (주황)
+  correction: '#4A7BB7', // 상대가 직접 첨삭해 준 부분 (파랑)
   line: '#EFEFEF',
 };
 

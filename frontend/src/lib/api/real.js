@@ -41,6 +41,9 @@ function toDiary(d) {
     id: d.diaryId, match_id: d.matchId, author_id: d.authorId, mine: d.mine, title: d.title,
     language: d.language, content: d.content, status: d.status,
     created_at: d.createdAt, corrected_at: d.correctedAt, read_at: d.readAt,
+    corrections: d.corrections ?? [],
+    search_words: d.search_words ?? [],
+    vocab: d.vocab ?? [],
   };
 }
 

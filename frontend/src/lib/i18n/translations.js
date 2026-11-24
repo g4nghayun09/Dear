@@ -58,7 +58,6 @@ export const translations = {
       tooLong: '{{max}}자 이하로 써 주세요',
       tooFewLines: '{{min}}줄 이상 써 주세요',
       dictSearchPlaceholder: '뜻으로 검색하기',
-      dictBasicForm: '기본형',
       dictEmpty: '검색 결과가 없어요',
     },
     vocab: {
@@ -67,7 +66,6 @@ export const translations = {
       emptyAll: '아직 저장된 단어가 없어요',
       noDiaryThatDay: '작성한 일기가 없어요',
       noWordsThatDay: '이 날은 사전으로 넣은 단어가 없어요',
-      correctionTag: '첨삭',
     },
     error: {
       alreadyMatched: '이미 교환 중인 상대가 있어요.',
@@ -75,6 +73,7 @@ export const translations = {
       notPartnerDiary: '첨삭할 수 없는 일기예요.',
       matchEnded: '끝난 교환일기는 첨삭할 수 없어요.',
       alreadyCorrected: '이미 첨삭된 일기예요.',
+      alreadyWroteToday: '오늘은 이미 일기를 썼어요. 내일 다시 써 주세요.',
       invalidInput: '입력한 내용을 다시 확인해 주세요.',
       invalidLanguage: '학습 언어로만 쓸 수 있어요. 글자를 확인해 주세요.',
       dictionaryUnavailable: '사전 검색이 잠시 안 돼요. 직접 추가해 주세요.',
@@ -161,7 +160,6 @@ export const translations = {
       tooLong: '{{max}}文字以内で書いてください',
       tooFewLines: '{{min}}行以上書いてください',
       dictSearchPlaceholder: '意味で検索',
-      dictBasicForm: '基本形',
       dictEmpty: '検索結果がありません',
     },
     vocab: {
@@ -170,7 +168,6 @@ export const translations = {
       emptyAll: 'まだ保存した単語がありません',
       noDiaryThatDay: '書いた日記がありません',
       noWordsThatDay: 'この日は辞書で入れた単語がありません',
-      correctionTag: '添削',
     },
     error: {
       alreadyMatched: 'すでに交換中の相手がいます。',
@@ -178,6 +175,7 @@ export const translations = {
       notPartnerDiary: '添削できない日記です。',
       matchEnded: '終了した交換日記は添削できません。',
       alreadyCorrected: 'すでに添削済みの日記です。',
+      alreadyWroteToday: '今日はもう日記を書きました。明日また書いてください。',
       invalidInput: '入力内容をもう一度確認してください。',
       invalidLanguage: '学習する言語だけで書けます。文字を確認してください。',
       dictionaryUnavailable: '辞書検索が一時的にできません。直接追加してください。',

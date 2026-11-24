@@ -78,8 +78,9 @@ public class KrdictClient {
             Element item = (Element) itemNodes.item(i);
             String korean = text(item, "word");
             String transWord = text(item, "trans_word");   // 첫 번째 뜻의 번역만 사용
+            String pos = text(item, "pos");                // 품사 (예: 명사, 동사, 형용사)
             if (korean.isEmpty() || transWord.isEmpty()) continue;
-            DictionaryResponse.Item next = toItem(korean, transWord);
+            DictionaryResponse.Item next = toItem(korean, transWord, pos.isEmpty() ? null : pos);
             if (!items.contains(next)) {          // 동음이의어로 같은 항목이 두 번 오는 경우 제거
                 items.add(next);
             }
@@ -91,16 +92,16 @@ public class KrdictClient {
      * "きょう【今日】。ほんじつ【本日】" → term=今日, reading=きょう (첫 번째 표현만).
      * 【】가 없으면(예: 가타카나 단어) 통째로 term 으로 쓴다.
      */
-    static DictionaryResponse.Item toItem(String korean, String transWord) {
+    static DictionaryResponse.Item toItem(String korean, String transWord, String pos) {
         String first = transWord.split("。")[0].trim();
         int open = first.indexOf('【');
         int close = first.indexOf('】');
         if (open > 0 && close > open) {
             String reading = first.substring(0, open).trim();
             String term = first.substring(open + 1, close).trim();
-            return new DictionaryResponse.Item(term, reading, korean);
+            return new DictionaryResponse.Item(term, reading, korean, pos);
         }
-        return new DictionaryResponse.Item(first, null, korean);
+        return new DictionaryResponse.Item(first, null, korean, pos);
     }
 
     /** 태그 이름으로 첫 번째 글자값 찾기 (없으면 빈 문자열) */

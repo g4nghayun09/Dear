@@ -41,10 +41,15 @@ public class DeepLClient {
 
     /** 일본어 → 한국어. 번역 결과가 없으면 빈 문자열 */
     public String translateJaToKo(String text) throws Exception {
+        return translate(text, "JA", "KO");
+    }
+
+    /** sourceLang/targetLang: DeepL 언어 코드 (예: "KO", "JA"). 번역 결과가 없으면 빈 문자열 */
+    public String translate(String text, String sourceLang, String targetLang) throws Exception {
         String body = JSON.writeValueAsString(Map.of(
                 "text", List.of(text),
-                "source_lang", "JA",
-                "target_lang", "KO"));
+                "source_lang", sourceLang,
+                "target_lang", targetLang));
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl))
                 .timeout(Duration.ofSeconds(5))
                 .header("Authorization", "DeepL-Auth-Key " + apiKey)   // 키는 로그에 남기지 않는다

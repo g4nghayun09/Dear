@@ -22,7 +22,10 @@ public class DictionaryWord {
     @Column(name = "korea_language", nullable = false, length = 100)
     private String koreaLanguage;
 
+    @Column(name = "part_of_speech", length = 10)
+    private String partOfSpeech;
+
     protected DictionaryWord() {}
-    // getter 3개 (getJapanLanguage, getReading, getKoreaLanguage)
+    // getter 4개 (getJapanLanguage, getReading, getKoreaLanguage, getPartOfSpeech)
 
 }

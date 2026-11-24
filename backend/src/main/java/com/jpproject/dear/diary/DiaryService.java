@@ -1,16 +1,20 @@
 package com.jpproject.dear.diary;
 
+import com.jpproject.dear.correction.CorrectionRepository;
 import com.jpproject.dear.dto.DiaryCalendarResponse;
 import com.jpproject.dear.dto.DiaryRequest;
 import com.jpproject.dear.dto.DiaryResponse;
 import com.jpproject.dear.exception.ApiException;
 import com.jpproject.dear.user.User;
 import com.jpproject.dear.user.UserRepository;
+import com.jpproject.dear.vocab.VocabService;
+import com.jpproject.dear.vocab.dto.VocabResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -25,12 +29,17 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
     private final LanguageValidator languageValidator;
+    private final CorrectionRepository correctionRepository;
+    private final VocabService vocabService;
 
     public DiaryService(DiaryRepository diaryRepository, UserRepository userRepository,
-                        LanguageValidator languageValidator) {
+                        LanguageValidator languageValidator, CorrectionRepository correctionRepository,
+                        VocabService vocabService) {
         this.diaryRepository = diaryRepository;
         this.userRepository = userRepository;
         this.languageValidator = languageValidator;
+        this.correctionRepository = correctionRepository;
+        this.vocabService = vocabService;
     }
 
     // 일기 전송 (FR-009~011): 학습 언어로 쓴 일기를 내 활성 매칭에 저장한다
@@ -44,6 +53,12 @@ public class DiaryService {
 
         Long matchId = diaryRepository.findActiveMatchId(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_ACTIVE_MATCH", "교환 상대가 없어요."));
+
+        // 하루에 한 개만 (오늘 자정 ~ 내일 자정 사이에 이미 썼는지)
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        if (!diaryRepository.findMyCreatedAtBetween(userId, todayStart, todayStart.plusDays(1)).isEmpty()) {
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_WROTE_TODAY", "오늘은 이미 일기를 썼어요.");
+        }
 
         String title = request.title() == null || request.title().isBlank() ? null : request.title().trim();
         Diary saved = diaryRepository.save(new Diary(matchId, userId, title, language, request.content()));
@@ -71,7 +86,10 @@ public class DiaryService {
         Diary diary = diaryRepository.findById(diaryId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "일기를 찾을 수 없어요."));
         requireMember(diary.getMatchId(), userId);
-        return DiaryResponse.from(diary, userId);
+        boolean ja = "ja".equals(diary.getLanguage());
+        List<String> searchWords = vocabService.searchTermsOf(diaryId, ja);
+        List<VocabResponse> vocab = vocabService.vocabOf(diaryId, ja);
+        return DiaryResponse.from(diary, userId, correctionRepository.findByDiaryIdOrderByCreatedAt(diaryId), searchWords, vocab);
     }
 
     // 홈 달력: 그 달에 내가 일기를 쓴 날짜

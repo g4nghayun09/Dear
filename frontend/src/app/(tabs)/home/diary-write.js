@@ -88,10 +88,10 @@ export default function WriteScreen() {
 
   // API-009 일기 전송 + 사전에서 넣은 단어는 보낼 때 한꺼번에 단어장에 저장 (실패해도 전송 자체는 그대로 진행)
   const sendNow = useCallback(async ({ title: t0, content: c0, words: w0 = [] }) => {
-    await api.sendDiary({ title: t0, content: c0 });
+    const diary = await api.sendDiary({ title: t0, content: c0 });
     if (w0.length) {
       await Promise.allSettled(
-        w0.map((w) => api.saveVocab({ term: w.term, reading: w.reading ?? null, meaning: w.meaning, source: 'search' })),
+        w0.map((w) => api.saveVocab({ term: w.term, reading: w.reading ?? null, meaning: w.meaning, pos: w.pos ?? null, source: 'search', diary_id: diary.id })),
       );
     }
     router.replace('/home'); // 홈 달력에 오늘이 파랗게 표시됨

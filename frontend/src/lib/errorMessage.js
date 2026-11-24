@@ -8,6 +8,7 @@ const CODE_KEYS = {
   NOT_PARTNER_DIARY: 'error.notPartnerDiary',
   MATCH_ENDED: 'error.matchEnded',
   ALREADY_CORRECTED: 'error.alreadyCorrected',
+  ALREADY_WROTE_TODAY: 'error.alreadyWroteToday',
   INVALID_INPUT: 'error.invalidInput',
   INVALID_LANGUAGE: 'error.invalidLanguage',
   DICTIONARY_UNAVAILABLE: 'error.dictionaryUnavailable',

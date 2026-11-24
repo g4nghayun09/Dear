@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   logout: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.placeholder },
   logoutText: { fontSize: 10, color: colors.text },
   list: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 24, gap: 12 },
-  divider: { marginTop: 10, height: 1, backgroundColor: colors.line },
+  divider: { height: 1, backgroundColor: colors.line },
   footerLink: { paddingVertical: 4 },
   footerLinkText: { fontSize: 12, color: colors.placeholder },
   card: {
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  empty: { marginTop: 24, textAlign: 'center', fontSize: 13, color: colors.placeholder },
+  empty: { textAlign: 'center', fontSize: 13, color: colors.placeholder, paddingVertical: 20 },
   error: { textAlign: 'center', fontSize: 12, color: colors.error },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   sheet: { width: '100%', maxWidth: 340, backgroundColor: '#fff', borderRadius: 16, padding: 18, gap: 10 },

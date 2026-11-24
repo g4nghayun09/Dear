@@ -2,16 +2,18 @@
 // - 내 일기이거나 이미 첨삭된 일기: 본문 + 첨삭 결과를 읽기만 함
 // - 아직 첨삭 안 한 친구 일기: 단어/구절을 눌러 고치고, 사전에서 단어 카드를 더해 함께 전달함
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DearLogo from '../../../components/DearLogo';
 import DictionaryModal from '../../../components/DictionaryModal';
+import VocabCard from '../../../components/VocabCard';
 import { Bell, ChevronLeft } from '../../../components/Icons';
 import { api } from '../../../lib/api';
 import { errorMessage } from '../../../lib/errorMessage';
 import { useLanguage } from '../../../lib/i18n';
 import { colors, radius } from '../../../lib/theme';
+import { getJSON, setJSON } from '../../../lib/tokenStorage';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -23,7 +25,6 @@ function formatDate(iso) {
 const TEXT = {
   ko: {
     untitled: '제목 없음',
-    corrections: '첨삭',
     me: '나',
     correctHint: '피드백을 줄 부분을 고치고 단어를 추가해 주세요',
     fixAction: '고치기',
@@ -39,10 +40,13 @@ const TEXT = {
     wordCardsTitle: '단어 카드 전달하기',
     dictionaryButton: '사전 찾아보기',
     submit: '전달하기',
+    vocabTitle: '단어 모음',
+    feedbackPrompt: (name) => `${name || '상대'}님의 피드백은 어떠셨나요?\n별점을 남겨주세요!`,
+    feedbackSubmit: '제출하기',
+    feedbackThanks: '소중한 의견 감사해요!',
   },
   ja: {
     untitled: 'タイトルなし',
-    corrections: '添削',
     me: '自分',
     correctHint: 'フィードバックする部分を直して、単語を追加してください',
     fixAction: '直す',
@@ -58,6 +62,10 @@ const TEXT = {
     wordCardsTitle: '単語カードを届ける',
     dictionaryButton: '辞書で調べる',
     submit: '届ける',
+    vocabTitle: '単語集め',
+    feedbackPrompt: (name) => `${name || '相手'}さんのフィードバックはどうでしたか?\n評価をしてください!`,
+    feedbackSubmit: '送信する',
+    feedbackThanks: '貴重なご意見ありがとうございます!',
   },
 };
 
@@ -80,6 +88,37 @@ function tokenizeContent(text, mode) {
     }
   }
   return tokens;
+}
+
+// 읽기 전용 보기: 첨삭 받은 부분(파란색, 고친 표현으로 교체) + 사전으로 찾은 단어(주황색)를 한 텍스트에 합쳐서 보여줌
+function buildReadSegments(fullText, corrections, searchWords) {
+  const ranges = [];
+  corrections.forEach((c) => {
+    if (!c.original_text) return;
+    const idx = fullText.indexOf(c.original_text);
+    if (idx === -1) return;
+    ranges.push({ start: idx, end: idx + c.original_text.length, kind: 'correction', text: c.corrected_text });
+  });
+  (searchWords ?? []).forEach((w) => {
+    if (!w) return;
+    const idx = fullText.indexOf(w);
+    if (idx === -1) return;
+    const end = idx + w.length;
+    if (ranges.some((r) => idx < r.end && end > r.start)) return; // 첨삭 구간과 겹치면 첨삭 쪽 우선
+    ranges.push({ start: idx, end, kind: 'search', text: w });
+  });
+
+  ranges.sort((a, b) => a.start - b.start);
+  const segs = [];
+  let cursor = 0;
+  ranges.forEach((r) => {
+    if (r.start < cursor) return;
+    if (r.start > cursor) segs.push({ kind: 'plain', key: `p-${cursor}`, text: fullText.slice(cursor, r.start), start: cursor });
+    segs.push({ kind: r.kind, key: `${r.kind}-${r.start}`, text: r.text, start: r.start });
+    cursor = r.end;
+  });
+  if (cursor < fullText.length) segs.push({ kind: 'plain', key: `p-${cursor}`, text: fullText.slice(cursor), start: cursor });
+  return segs;
 }
 
 // 확정된 첨삭(교정) 구간은 통째로 하나의 조각으로, 나머지는 토큰별로 나눠서 렌더링 목록을 만듦
@@ -132,8 +171,7 @@ export default function DiaryDetailScreen() {
     };
   }, [id]);
 
-  const corrections = diary?.corrections ?? [];
-  const needsCorrection = !!diary && !diary.mine && diary.status !== 'corrected';
+  const needsCorrection = !!diary && !diary.mine && String(diary.status ?? '').toLowerCase() !== 'corrected';
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -152,31 +190,132 @@ export default function DiaryDetailScreen() {
 
       {diary && needsCorrection && <CorrectScreen diary={diary} tx={tx} />}
 
-      {diary && !needsCorrection && (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.paper}>
-            <Text style={styles.paperTitle}>{diary.title || tx.untitled}</Text>
+      {diary && !needsCorrection && <ReadScreen diary={diary} tx={tx} partner={partner} />}
+    </SafeAreaView>
+  );
+}
+
+// 내 일기이거나 이미 첨삭된 일기: 전체 내용을 보여주되, 첨삭 받은 부분은 파란색(고친 표현으로 교체),
+// 사전으로 찾은 단어는 주황색으로 한 화면에 같이 표시함
+function ReadScreen({ diary, tx, partner }) {
+  const hasTitle = !!diary.title;
+  const corrections = diary.corrections ?? [];
+  const searchWords = diary.search_words ?? [];
+  const hasCorrections = corrections.length > 0;
+
+  // 제목과 본문은 별도 텍스트라서, 각자 안에서 첨삭/사전 단어를 따로 찾는다 (한쪽 글자가 다른 쪽까지 번지지 않게)
+  // 원문 카드: 사전 단어(주황)만 표시, 첨삭 전 그대로
+  const originalTitleSegments = useMemo(
+    () => (hasTitle ? buildReadSegments(diary.title, [], searchWords) : []),
+    [hasTitle, diary.title, searchWords],
+  );
+  const originalBodySegments = useMemo(
+    () => buildReadSegments(diary.content, [], searchWords),
+    [diary.content, searchWords],
+  );
+  // 첨삭된 카드: 고친 부분(파랑) + 사전 단어(주황)를 합쳐서 표시
+  const titleSegments = useMemo(
+    () => (hasTitle ? buildReadSegments(diary.title, corrections, searchWords) : []),
+    [hasTitle, diary.title, corrections, searchWords],
+  );
+  const bodySegments = useMemo(
+    () => buildReadSegments(diary.content, corrections, searchWords),
+    [diary.content, corrections, searchWords],
+  );
+
+  const renderSegments = (segs) =>
+    segs.map((seg) => {
+      if (seg.kind === 'correction') return <Text key={seg.key} style={styles.correctedInline}>{seg.text}</Text>;
+      if (seg.kind === 'search') return <Text key={seg.key} style={styles.searchInline}>{seg.text}</Text>;
+      return <Text key={seg.key}>{seg.text}</Text>;
+    });
+
+  // 한 번 별점을 남겼으면 다음에 또 안 뜨게 — 기기에만 저장 (서버 전송은 아직 없음)
+  const [alreadyRated, setAlreadyRated] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    getJSON(`dear.rated.${diary.id}`)
+      .then((rated) => !cancelled && setAlreadyRated(!!rated))
+      .catch(() => !cancelled && setAlreadyRated(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [diary.id]);
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      {hasCorrections && (
+        <View style={styles.paper}>
+          <View style={styles.titleBlock}>
+            {hasTitle && <Text style={styles.editTitleText}>{renderSegments(originalTitleSegments)}</Text>}
             <Text style={styles.meta}>
               {diary.mine ? tx.me : partner}  {formatDate(diary.created_at)}
             </Text>
-            <Text style={styles.body}>{diary.content}</Text>
           </View>
-
-          {corrections.length > 0 && (
-            <View style={styles.paper}>
-              <Text style={styles.paperTitle}>{tx.corrections}</Text>
-              {corrections.map((c) => (
-                <View key={c.id} style={styles.correction}>
-                  <Text style={styles.original}>{c.original_text}</Text>
-                  <Text style={styles.fixed}>→ {c.corrected_text}</Text>
-                  {!!c.explanation && <Text style={styles.explain}>{c.explanation}</Text>}
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
+          <Text style={styles.body}>{renderSegments(originalBodySegments)}</Text>
+        </View>
       )}
-    </SafeAreaView>
+
+      <View style={styles.paper}>
+        <View style={styles.titleBlock}>
+          {hasTitle && <Text style={styles.editTitleText}>{renderSegments(titleSegments)}</Text>}
+          <Text style={styles.meta}>
+            {diary.mine ? tx.me : partner}  {formatDate(diary.created_at)}
+          </Text>
+        </View>
+        <Text style={styles.body}>{renderSegments(bodySegments)}</Text>
+      </View>
+
+      {(diary.vocab ?? []).length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>{tx.vocabTitle}</Text>
+          <View style={{ gap: 10 }}>
+            {diary.vocab.map((v) => (
+              <VocabCard key={v.id} item={v} tagLabel={v.pos || null} />
+            ))}
+          </View>
+        </>
+      )}
+
+      {diary.mine && hasCorrections && !alreadyRated && <RatingPrompt diaryId={diary.id} partner={partner} tx={tx} />}
+    </ScrollView>
+  );
+}
+
+// 받은 첨삭에 대한 별점 — 관리자가 매칭 궁합을 보려고 모으는 용도라 상대에겐 안 보이고, 지금은 저장 없이 화면만 둠.
+// 한 번 제출하면 이 일기에선 기기에 표시를 남겨서 다음에 다시 안 뜨게 한다
+function RatingPrompt({ diaryId, partner, tx }) {
+  const [rating, setRating] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+
+  const onSubmit = () => {
+    setSubmitted(true);
+    setJSON(`dear.rated.${diaryId}`, true).catch(() => {});
+  };
+
+  return (
+    <View style={styles.ratingBox}>
+      <Text style={styles.ratingText}>{tx.feedbackPrompt(partner)}</Text>
+      <View style={styles.starsRow}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable key={n} onPress={() => !submitted && setRating(n)} hitSlop={6} accessibilityRole="button">
+            <Text style={[styles.star, n <= rating && styles.starFilled]}>★</Text>
+          </Pressable>
+        ))}
+      </View>
+      {submitted ? (
+        <Text style={styles.ratingThanks}>{tx.feedbackThanks}</Text>
+      ) : (
+        <Pressable
+          onPress={onSubmit}
+          disabled={rating === 0}
+          style={({ pressed }) => [styles.ratingSubmit, rating === 0 && styles.disabled, pressed && styles.pressed]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.ratingSubmitText}>{tx.feedbackSubmit}</Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -293,8 +432,10 @@ function CorrectScreen({ diary, tx }) {
       <Text style={styles.hint}>{tx.correctHint}</Text>
 
       <View style={styles.paper}>
-        <Text style={styles.paperTitle}>{diary.title || tx.untitled}</Text>
-        <Text style={styles.meta}>{formatDate(diary.created_at)}</Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.paperTitle}>{diary.title || tx.untitled}</Text>
+          <Text style={styles.meta}>{formatDate(diary.created_at)}</Text>
+        </View>
         <Text style={styles.body}>{diary.content}</Text>
       </View>
 
@@ -350,6 +491,8 @@ function CorrectScreen({ diary, tx }) {
 function CorrectionEditModal({ visible, editing, tx, onCancel, onSave, onDelete }) {
   const [corrected, setCorrected] = useState('');
   const [explanation, setExplanation] = useState('');
+  const [correctedFocused, setCorrectedFocused] = useState(false);
+  const [explanationFocused, setExplanationFocused] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -370,10 +513,11 @@ function CorrectionEditModal({ visible, editing, tx, onCancel, onSave, onDelete 
           <TextInput
             value={corrected}
             onChangeText={setCorrected}
+            onFocus={() => setCorrectedFocused(true)}
+            onBlur={() => setCorrectedFocused(false)}
             placeholder={tx.correctedPlaceholder}
             placeholderTextColor={colors.placeholder}
-            style={styles.input}
-            multiline
+            style={[styles.input, correctedFocused && styles.inputFocused]}
             autoFocus
           />
 
@@ -381,10 +525,11 @@ function CorrectionEditModal({ visible, editing, tx, onCancel, onSave, onDelete 
           <TextInput
             value={explanation}
             onChangeText={setExplanation}
+            onFocus={() => setExplanationFocused(true)}
+            onBlur={() => setExplanationFocused(false)}
             placeholder={tx.explanationPlaceholder}
             placeholderTextColor={colors.placeholder}
-            style={[styles.input, styles.inputMultiline]}
-            multiline
+            style={[styles.input, explanationFocused && styles.inputFocused]}
           />
 
           <View style={styles.sheetActions}>
@@ -422,20 +567,18 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingBottom: 24, gap: 14 },
   hint: { fontSize: 12, color: colors.placeholder },
   paper: { backgroundColor: colors.paper, borderRadius: 14, padding: 20, gap: 6 },
-  paperTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 10, color: colors.placeholder },
-  body: { marginTop: 10, fontSize: 13, lineHeight: 21, color: colors.text },
-  correction: { marginTop: 8, gap: 2 },
-  original: { fontSize: 12, color: colors.placeholder, textDecorationLine: 'line-through' },
-  fixed: { fontSize: 13, color: colors.highlight },
-  explain: { fontSize: 11, color: colors.text },
+  paperTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  titleBlock: { paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.line },
+  meta: { fontSize: 10, color: colors.placeholder, marginTop: 4 },
+  body: { marginTop: 10, fontSize: 13, lineHeight: 21, color: colors.text, fontWeight: '400' },
   error: { margin: 18, fontSize: 12, color: colors.error },
 
   editPaper: { borderWidth: 1.5, borderColor: 'transparent' },
   editPaperActive: { borderColor: colors.primary },
-  editTitleText: { fontSize: 14, fontWeight: '700', color: colors.text },
+  editTitleText: { fontSize: 17, fontWeight: '700', color: colors.text },
   selectedToken: { backgroundColor: '#DCE8F6' },
-  correctedInline: { color: colors.highlight, fontWeight: '600' },
+  correctedInline: { color: colors.correction, fontWeight: '600' },
+  searchInline: { color: colors.highlight, fontWeight: '600' },
 
   selectionBar: { flexDirection: 'row', gap: 10, marginTop: -4 },
   smallBtn: { height: 40, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
@@ -446,6 +589,17 @@ const styles = StyleSheet.create({
   smallBtnDangerText: { fontSize: 13, color: colors.error, fontWeight: '600' },
 
   sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.text, marginTop: 4 },
+  ratingBox: { marginTop: 10, alignItems: 'center', gap: 12, paddingVertical: 8 },
+  ratingText: { fontSize: 13, color: colors.text, textAlign: 'center', lineHeight: 19 },
+  starsRow: { flexDirection: 'row', gap: 6 },
+  star: { fontSize: 26, color: colors.placeholder },
+  starFilled: { color: '#F2B705' },
+  ratingSubmit: {
+    height: 40, minWidth: 140, borderRadius: radius.pill, backgroundColor: colors.primary,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28,
+  },
+  ratingSubmitText: { fontSize: 13, color: colors.primaryText, fontWeight: '600', textAlign: 'center', marginTop: -1 },
+  ratingThanks: { fontSize: 12, color: colors.placeholder },
   wordCardRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   wordCard: { backgroundColor: '#DCE8F6', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
   wordCardText: { fontSize: 12, color: colors.text },
@@ -461,9 +615,11 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 11, color: colors.placeholder, marginTop: 6 },
   originalPreview: { fontSize: 13, color: colors.placeholder, textDecorationLine: 'line-through' },
   input: {
-    minHeight: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.input,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: colors.text, textAlignVertical: 'top',
+    height: 40, borderRadius: radius.input, backgroundColor: '#fff',
+    borderWidth: 1, borderColor: '#E9E3E2',
+    paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: colors.text,
+    ...Platform.select({ web: { outlineStyle: 'none' }, default: {} }),
   },
-  inputMultiline: { minHeight: 60 },
+  inputFocused: { borderColor: colors.border },
   sheetActions: { flexDirection: 'row', gap: 10, marginTop: 10 },
 });

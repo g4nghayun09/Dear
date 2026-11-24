@@ -28,18 +28,18 @@ const db = {
 
 // 사전 검색 화면 확인용 샘플 단어
 const DICTIONARY = [
-  { ja: '白い', reading: 'しろい', ko: '하얗다' },
-  { ja: '今日', reading: 'きょう', ko: '오늘' },
-  { ja: '放課後', reading: 'ほうかご', ko: '방과 후' },
-  { ja: '友達', reading: 'ともだち', ko: '친구' },
-  { ja: '音楽', reading: 'おんがく', ko: '음악' },
-  { ja: '天気', reading: 'てんき', ko: '날씨' },
-  { ja: '学校', reading: 'がっこう', ko: '학교' },
-  { ja: '寒い', reading: 'さむい', ko: '춥다' },
-  { ja: '楽しい', reading: 'たのしい', ko: '즐겁다' },
-  { ja: '明日', reading: 'あした', ko: '내일' },
-  { ja: '空', reading: 'そら', ko: '하늘' },
-  { ja: '嬉しい', reading: 'うれしい', ko: '기쁘다' },
+  { ja: '白い', reading: 'しろい', ko: '하얗다', pos: '형용사' },
+  { ja: '今日', reading: 'きょう', ko: '오늘', pos: '명사' },
+  { ja: '放課後', reading: 'ほうかご', ko: '방과 후', pos: '명사' },
+  { ja: '友達', reading: 'ともだち', ko: '친구', pos: '명사' },
+  { ja: '音楽', reading: 'おんがく', ko: '음악', pos: '명사' },
+  { ja: '天気', reading: 'てんき', ko: '날씨', pos: '명사' },
+  { ja: '学校', reading: 'がっこう', ko: '학교', pos: '명사' },
+  { ja: '寒い', reading: 'さむい', ko: '춥다', pos: '형용사' },
+  { ja: '楽しい', reading: 'たのしい', ko: '즐겁다', pos: '형용사' },
+  { ja: '明日', reading: 'あした', ko: '내일', pos: '명사' },
+  { ja: '空', reading: 'そら', ko: '하늘', pos: '명사' },
+  { ja: '嬉しい', reading: 'うれしい', ko: '기쁘다', pos: '형용사' },
 ];
 
 function partnerFor(lang) {
@@ -138,6 +138,10 @@ export const mockApi = {
     if (!me) fail(400, 'INVALID_INPUT');
     if (title && title.length > 30) fail(400, 'INVALID_INPUT');
     if (!content || !meetsServerLength(content)) fail(400, 'INVALID_INPUT');
+    const todayStr = now().slice(0, 10); // 'YYYY-MM-DD'
+    if (db.diaries.some((d) => d.author_id === ME && d.created_at.startsWith(todayStr))) {
+      fail(409, 'ALREADY_WROTE_TODAY');
+    }
     const language = learningLang(me.native_lang);
     const check = checkDiaryInput(content, language, MIN_LINES); // 분량은 위에서 서버 규칙으로 검사함
     if (check.invalidChars.length > 0) fail(400, 'INVALID_LANGUAGE');
@@ -175,7 +179,12 @@ export const mockApi = {
     const d = db.diaries.find((x) => x.id === id);
     if (!d) fail(404, 'NOT_FOUND');
     const active = db.match?.id === d.match_id;
-    return { ...d, match_status: active ? 'active' : 'ended', corrections: db.corrections.filter((c) => c.diary_id === id) };
+    return {
+      ...d, match_status: active ? 'active' : 'ended',
+      corrections: db.corrections.filter((c) => c.diary_id === id),
+      search_words: db.vocab.filter((v) => v.source === 'search' && v.diary_id === id).map((v) => v.term),
+      vocab: db.vocab.filter((v) => v.diary_id === id),
+    };
   },
   async markDiaryRead(id) {
     await wait(150);
@@ -218,8 +227,8 @@ export const mockApi = {
     const rows = DICTIONARY.filter((w) => !query || w.ko.includes(query) || w.ja.includes(query));
     const results = rows.slice(0, 20).map((w) =>
       from === 'ja'
-        ? { term: w.ja, reading: w.reading, meaning: w.ko }
-        : { term: w.ko, reading: null, meaning: w.ja },
+        ? { term: w.ja, reading: w.reading, meaning: w.ko, pos: w.pos }
+        : { term: w.ko, reading: null, meaning: w.ja, pos: w.pos },
     );
     return { results };
   },
@@ -230,7 +239,8 @@ export const mockApi = {
     if (item.source === 'correction' && !item.correction_id) fail(400, 'INVALID_INPUT');
     const v = {
       id: uid(), term: item.term, reading: item.reading ?? null, meaning: item.meaning,
-      wrong_text: item.wrong_text ?? null, source: item.source, correction_id: item.correction_id ?? null,
+      wrong_text: item.wrong_text ?? null, pos: item.pos ?? null, source: item.source, correction_id: item.correction_id ?? null,
+      diary_id: item.diary_id ?? null,
       study_count: 0, is_mastered: false, last_studied_at: null, created_at: now(),
     };
     db.vocab.unshift(v);
