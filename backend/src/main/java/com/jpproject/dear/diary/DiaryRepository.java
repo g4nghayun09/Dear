@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
-
     List<Diary> findByMatchIdOrderByCreatedAtDesc(Long matchId, Pageable pageable);
 
     // 달력에 표시할 날짜: 내가 쓴 일기의 전송 시각
