@@ -86,8 +86,8 @@ export const realApi = {
   markDiaryRead: (id) => request(`/api/diaries/${id}/read`, { method: 'POST' }),
 
   // ---- 첨삭 ----
-  submitCorrections: (diaryId, items) =>
-    request(`/api/diaries/${diaryId}/corrections`, { method: 'POST', body: { items } }),
+  submitCorrections: (diaryId, items, wordCards = []) =>
+    request(`/api/diaries/${diaryId}/corrections`, { method: 'POST', body: { items, word_cards: wordCards } }),
 
   // ---- 단어장·학습 ----
   searchDictionary: (q, from) => request('/api/dictionary', { query: { q, from } }),

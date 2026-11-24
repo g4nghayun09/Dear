@@ -48,12 +48,14 @@ function partnerFor(lang) {
 
 function seedDiary(match, lang) {
   // 상대가 먼저 쓴 일기 하나 (상대의 학습 언어 = 나의 모국어로 쓰여 있음 → 내가 첨삭할 수 있음)
+  // 제목도 첨삭 대상이라는 걸 화면에서 바로 확인할 수 있게, 시드 데이터에도 제목을 넣어 둠
+  const title = lang === 'ko' ? '오늘의 작은 행복' : '今日の小さな幸せ';
   const content =
     lang === 'ko'
       ? '오늘은 친구랑 한강에 갔어요.\n라면을 먹었어요.'
       : '今日は放課後に友達とカフェに行きました。\nケーキがとてもおいしかったです。';
   db.diaries.push({
-    id: uid(), match_id: match.id, author_id: 'partner', title: null, content,
+    id: uid(), match_id: match.id, author_id: 'partner', title, content, language: lang,
     status: 'sent', created_at: now(), corrected_at: null, read_at: null,
   });
 }
@@ -184,15 +186,20 @@ export const mockApi = {
   },
 
   // ---- 첨삭 ----
-  async submitCorrections(diaryId, items) {
+  // wordCards: 첨삭과 함께 상대에게 보내는 단어 카드(사전에서 고른 단어) — API-012 확장
+  // 첨삭·단어 카드는 "첨삭을 받은 사람(상대)"의 단어장에 쌓이는 것이라, 첨삭을 해 준 나의 단어장에는 아무것도 추가하지 않는다.
+  // mock은 계정이 하나뿐이라 상대 쪽 단어장을 직접 보여줄 수는 없고, 첨삭 결과 자체(diary.corrections)는 그대로 저장해서
+  // 상대가 자기 일기를 다시 열어볼 때 보이게 한다.
+  async submitCorrections(diaryId, items, wordCards = []) {
     await wait();
     const d = db.diaries.find((x) => x.id === diaryId);
     if (!d || d.author_id === ME) fail(403, 'NOT_PARTNER_DIARY');
     if (db.match?.id !== d.match_id) fail(400, 'MATCH_ENDED');
     if (d.status === 'corrected') fail(400, 'ALREADY_CORRECTED');
     if (!Array.isArray(items) || items.length > 20) fail(400, 'INVALID_INPUT');
+    const fullText = (d.title ? `${d.title}\n` : '') + d.content; // 제목도 첨삭 대상이라 제목+본문을 합쳐서 확인
     for (const it of items) {
-      if (!it.original_text || !it.corrected_text || !d.content.includes(it.original_text)) fail(400, 'INVALID_INPUT');
+      if (!it.original_text || !it.corrected_text || !fullText.includes(it.original_text)) fail(400, 'INVALID_INPUT');
     }
     const created_at = now();
     items.forEach((it) =>

@@ -55,7 +55,7 @@ export default function ExchangeScreen() {
 
   const [match, setMatch] = useState(null); // API-007 응답, null = 확인 중
   const [diaries, setDiaries] = useState(null);
-  const [tab, setTab] = useState(initialTab === 'friend' ? 'friend' : 'mine'); // mine | friend
+  const [tab, setTab] = useState('mine'); // mine | friend
   const [error, setError] = useState('');
 
   const loadDiaries = useCallback(async (matchId) => {
@@ -83,7 +83,13 @@ export default function ExchangeScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+      // 홈의 "받은 일기 보러가기"에서 넘어온 경우 친구 일기 탭으로 열고, 다음에 또 쓸 수 있도록 파라미터는 바로 지움
+      // (탭 화면은 다시 마운트되지 않아서, 포커스될 때마다 직접 확인해야 함)
+      if (initialTab === 'friend') {
+        setTab('friend');
+        router.setParams({ tab: undefined });
+      }
+    }, [load, initialTab]),
   );
 
   const header = (
