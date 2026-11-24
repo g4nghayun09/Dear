@@ -30,6 +30,11 @@ jwt:
   secret: ${JWT_SECRET:}                         # 32자 이상. 없으면 서버가 시작되지 않음
   expiration-ms: ${JWT_EXPIRATION_MS:604800000}  # 기본 7일
 
+# 한국어기초사전 Open API (사전 검색). 키가 없으면 DB 사전만 쓴다
+krdict:
+  api-key: ${KRDICT_API_KEY:}
+  base-url: https://krdict.korean.go.kr/api/search
+
 # [개발용] X-User-Id 헤더로 로그인 없이 테스트 (DevUserIdFilter, /api/dev/**). 시연·배포 때는 반드시 false
 dear:
   dev-auth:
