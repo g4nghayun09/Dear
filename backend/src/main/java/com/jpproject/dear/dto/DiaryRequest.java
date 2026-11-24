@@ -11,3 +11,4 @@ public record DiaryRequest(
         String content
 ) {
 }
+
